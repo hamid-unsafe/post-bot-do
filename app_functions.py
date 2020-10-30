@@ -7,6 +7,8 @@ async def validateChannelId(id, bot):
 
     if type(channel) == Channel:
       return True
+    elif type(channel) == User:
+      return 'isuser'
     else:
       return False
 
@@ -169,7 +171,7 @@ async def respondAction(action, event, bot):
       # validate if a channel exists
       isChannel = await validateChannelId(text, bot)
 
-      if isChannel:
+      if isChannel == True:
         conId = db.exec_fetch('SELECT active_connector FROM users WHERE telegram_id = %s', (id,))
 
         success = addDest(conId[0][0], text)
@@ -187,9 +189,25 @@ async def respondAction(action, event, bot):
           await respond(f'❗ id "{text}" is already in destinations.\n go back: /con_{conId[0][0]}')
         elif success == 'isinsources':
           await respond(f'❗ id "{text}" is used by you or other users as a source, you can only use it as a source. enter another id\nor /cancel the operation')
+      elif isChannel == 'isuser':
+        conId = db.exec_fetch('SELECT active_connector FROM users WHERE telegram_id = %s', (id,))
+
+        success = addDest(conId[0][0], text)
+
+        if success == 'success':
+          # dest was added in database
+          await respond(f'✔️ destination "{text}" added\nadd another dest: /adddest\nsee connector: /con_{conId[0][0]}')
+          
+          resetUser(id, 'justaction')
+
+          return 'destadded'
+        elif success == 'hasdest':
+          await respond(f'❗ id "{text}" is already in destinations.\n go back: /con_{conId[0][0]}')
+        elif success == 'isinsources':
+          await respond(f'❗ id "{text}" is used by you or other users as a source, you can only use it as a source. enter another id\nor /cancel the operation')
       else:
-        # channel is was invalid
-        await respond('please enter a valid channel id')
+        # channel was invalid
+        await respond('please enter a valid id')
     except:
       await respond('failed to add destination, please try again or contact supprot')
   elif action == 'adding-source-to-connector':

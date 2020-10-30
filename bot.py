@@ -59,8 +59,10 @@ async def new_message_handler(event):
     dests = funcs.getDestsWithSource(username)
 
     for dest in dests:
-      await bot.send_message(dest, message)
-      print(dest)
+      if dest.endswith('bot'):
+        await client.send_message(dest, message)
+      else:
+        await bot.send_message(dest, message)
 
   elif type(event.to_id) == PeerUser:
     user = await client.get_entity(event.from_id)
@@ -193,7 +195,7 @@ async def botCommandRecieved(event, command):
 
         # leave channels if no other user has it in sources
         if len(connectors) == 1:
-          leaveChannel(source)
+          await leaveChannel(source)
     
       success = funcs.deleteConnector(activeConnector)
 
@@ -311,23 +313,6 @@ async def botCommandRecieved(event, command):
     else:
       await event.respond('connector id invalid')
     
-  # add channel command
-  elif command.startswith('addchannel'):
-    channelId = command.split(' ')[1]
-
-    isIdValid = await funcs.validateChannelId(channelId, bot)
-
-    if isIdValid:
-      try:
-        await joinChannel(channelId)
-
-        await event.respond('✔️ channel added')
-      except:
-        await event.respond('there was a problem')
-
-    else:
-      await event.respond('id is not a valid channel')
-
   # my own private commands 
   # add a user to list 
   elif command.startswith('adduser'):
