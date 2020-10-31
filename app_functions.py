@@ -161,6 +161,14 @@ def getConnector(id):
   else:
     return con[0]
 
+def checkUserInDb(id):
+  user = db.exec_fetch('SELECT * FROM users WHERE telegram_id = %s', (id,))
+
+  if user:
+    return True
+  else:
+    return False
+
 async def respondAction(action, event, bot):
   respond = event.respond
   id = event.from_id

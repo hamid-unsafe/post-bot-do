@@ -6,13 +6,14 @@ DB_HOST='post-bot-db-do-user-8158092-0.b.db.ondigitalocean.com'
 DB_NAME='post-bot'
 DB_USER='admin'
 DB_PASS='ofj65mnfmd73aguo'
+DB_PORT=25060
 
 db = None
 
 def connectDB():
   global db
   
-  db = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+  db = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
 
 def exec(query, *args):
   global db
@@ -52,7 +53,7 @@ def authenticate(id):
 
 def addUser(id, name):
   try:
-    exec('INSERT INTO users (name, telegram_id, membership, is_admin, current_action) VALUES (%s, %s, %s, %s, %s)', (name, id, 'all', False, 'none',))
+    exec('INSERT INTO users (name, telegram_id, membership, is_admin, active_connector, current_action) VALUES (%s, %s, %s, %s, %s, %s)', (name, id, 'all', False, 0, 'none',))
 
     return True
   except:
@@ -66,7 +67,7 @@ def initDB():
 
   exec('CREATE TABLE connectors (id SERIAL PRIMARY KEY, name varchar(32), owner_id integer, sources text[], destinations text[], rules text[])')
 
-  exec('CREATE TABLE users (id SERIAL PRIMARY KEY, name varchar, telegram_id integer UNIQUE, active_connector integer, membership text, is_admin boolean, current_action text)')
+  exec('CREATE TABLE users (id SERIAL PRIMARY KEY, name varchar, telegram_id integer, active_connector integer, membership text, is_admin boolean, current_action text)')
 
   closeDB()
 
@@ -75,6 +76,4 @@ def closeDB():
   
   db.close()
 
-# connectDB()
 # initDB()
-# closeDB()

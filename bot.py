@@ -17,9 +17,6 @@ API_ID = 1817932
 API_HASH = '96c1ee3203876c9b5719e2de75a3b7d4'
 BOT_TOKEN = '1345211056:AAEQIL0JcZxcfELcFK6lU6JZTgWVhsa52wQ'
 
-chatId = None
-destChatId = None
-
 client = TelegramClient(client_name, API_ID, API_HASH)
 bot = TelegramClient(bot_name, API_ID, API_HASH)
 
@@ -82,9 +79,6 @@ async def joinChannel(id):
   await client(JoinChannelRequest(channel))
 
 async def botCommandRecieved(event, command):
-  global chatId
-  global destChatId
-  
   if command == 'start':
     await event.respond('🎉 welcome 🎉')
 
@@ -92,14 +86,6 @@ async def botCommandRecieved(event, command):
   elif command == 'getid':
     await event.respond(f'{event.from_id}')
 
-  # set destination channel
-  elif command.startswith('setdest'):
-    channelId = command.split(' ')[1]
-
-    destChatId = channelId
-
-    await event.respond('channel saved')
-    
   # get connectors
   elif command == 'myconnectors':
     funcs.cancelUserAction(event.from_id)
@@ -313,25 +299,53 @@ async def botCommandRecieved(event, command):
     else:
       await event.respond('connector id invalid')
     
+  # add channel command
+  elif command.startswith('addchannel'):
+    channelId = command.split(' ')[1]
+
+    isIdValid = await funcs.validateChannelId(channelId, bot)
+
+    if isIdValid == True:
+      try:
+        await joinChannel(channelId)
+
+        await event.respond('✔️ channel added')
+      except:
+        await event.respond('there was a problem')
+
+    else:
+      await event.respond('id is not a valid channel')
+
   # my own private commands 
   # add a user to list 
   elif command.startswith('adduser'):
     userId = command.split(' ')[1]
 
-    user = await funcs.getUser(userId, bot)
+    if len(command.split(' ')) > 2:
+      return
 
-    if user:
-      userName = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
+    userExists = funcs.checkUserInDb(userId)
 
-      try:
-        db.addUser(userId, userName)
+    if not userExists:
+      user = await funcs.getUser(userId, bot)
 
-        await event.respond(f'✔️ user {userName} added')
-      except:
-        await event.respond('there was a problem')
+      if user:
+        userName = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
 
+        try:
+          addResult = db.addUser(userId, userName)
+
+          if addResult:
+            await event.respond(f'✔️ user {userName} added')
+          else:
+            await event.respond(f'there was a problem!')
+        except:
+          await event.respond('there was a problem')
+
+      else:
+        await event.respond('user not valid')
     else:
-      await event.respond('user not valid')
+      await event.respond('user is already a member')
 
   # inject
   elif command.startswith('inject'):
@@ -341,6 +355,10 @@ async def botCommandRecieved(event, command):
 
   # test command
   elif command == 'test':
+    ent = await bot.get_entity('Agha_abollfazl')
+
+    print(ent)
+    
     await event.respond('test response')
   
   else:
