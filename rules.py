@@ -5,6 +5,7 @@ def filterMessage(message, rules):
   # And the "TEXT" is a string built in a way reffering to "N"
   newMessage = message
   hasPassed = True
+  dontSend = False
 
   for rule in rules:
     data = rule.split('_')
@@ -21,12 +22,53 @@ def filterMessage(message, rules):
         filterRes = wordWhiteList(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 2:
+        # word black list
+        filterRes = wordBlackList(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 3:
+        # replace word
+        filterRes = wordReplace(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 4:
+        # add before
+        filterRes = addBefore(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 5:
+        # add after
+        filterRes = addAfter(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 6:
+        # clear formatting
+        filterRes = clearFormatting(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
 
-  return { 'message': newMessage, 'hasPassed': hasPassed }
+  if dontSend == True:
+    return { 'message': newMessage, 'hasPassed': False }
+  else:
+    return { 'message': newMessage, 'hasPassed': hasPassed }
+
 
 # fuctions
 def wordWhiteList(message, words):
-  wordsArr = words.split(':')
+  wordsArr = words.split(';')
 
   timesWordRepeated = 0
 
@@ -35,6 +77,54 @@ def wordWhiteList(message, words):
       timesWordRepeated += 1
 
   if timesWordRepeated:
-    return {'message': message, 'hasPassed': True}
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
   else:
-    return {'message': message, 'hasPassed': False}
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+
+def wordBlackList(message, words):
+  wordsArr = words.split(';')
+
+  hasWords = False
+
+  for word in wordsArr:
+    if word in message.message:
+      hasWords = True
+
+  if hasWords:
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+  else:
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def wordReplace(message, data):
+  listOfItems = data.split(';')
+
+  messageText = message.message
+
+  for item in listOfItems:
+    words = item.split(':')
+    word1 = words[0]
+    word2 = words[1]
+    messageText = messageText.replace(word1, word2)
+
+  message.message = messageText
+
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def addBefore(message, text):
+  newText = text + ' ' + message.message
+  
+  message.message = newText
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def addAfter(message, text):
+  newText = message.message + ' ' + text
+  
+  message.message = newText
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def clearFormatting(message, data):
+  message.entities = []
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
