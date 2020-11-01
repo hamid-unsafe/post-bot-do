@@ -32,16 +32,10 @@ def getConnectorsHavingSource(sourceId):
 
   return li
 
-def getDestsWithSource(sourceId):
-  dests = db.exec_fetch('SELECT destinations FROM connectors WHERE %s = ANY (sources)', (sourceId,))
+def getDestAndRuleWithSource(sourceId):
+  destAndRules = db.exec_fetch('SELECT destinations, rules FROM connectors WHERE %s = ANY (sources)', (sourceId,))
 
-  listOfAllDests = []
-
-  for destList in dests:
-    for dest in destList['destinations']:
-      listOfAllDests.append(dest)
-
-  return set(listOfAllDests)
+  return destAndRules
 
 def removeSource(conId, sourceId):
   db.exec('UPDATE connectors SET sources = array_remove(sources, %s) WHERE id = %s', (sourceId.lower(), conId,))
@@ -104,7 +98,7 @@ def getActiveConnectorSources(userId):
   return res1[0]
 
 def addConnector(userId, name):
-  db.exec('INSERT INTO connectors (owner_id, name, sources, destinations) VALUES (%s, %s, %s, %s)', (userId, name, [], []))
+  db.exec('INSERT INTO connectors (owner_id, name, sources, destinations, rules) VALUES (%s, %s, %s, %s, %s)', (userId, name, [], [], [],))
 
 def deleteConnector(conId):
   try:

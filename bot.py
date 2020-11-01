@@ -8,6 +8,7 @@ import telethon
 import app_functions as funcs
 import requests
 import db
+from rules import filterMessage
 
 db.connectDB()
 
@@ -49,17 +50,27 @@ async def bot_new_message_handler(event):
 async def new_message_handler(event):
   if type(event.to_id) == PeerChannel:
     channel = await client.get_entity(event.to_id.channel_id)
-    username = channel.username
+    channelUsername = channel.username
 
     message = event.message
 
-    dests = funcs.getDestsWithSource(username)
+    destAndRules = funcs.getDestAndRuleWithSource(channelUsername)
+    
+    for i in destAndRules:
+      dests = i[0]
+      rules = i[1]
 
-    for dest in dests:
-      if dest.endswith('bot'):
-        await client.send_message(dest, message)
-      else:
-        await bot.send_message(dest, message)
+      filterResult = filterMessage(message, rules)
+
+      if filterResult['hasPassed']:
+        message = filterResult['message']
+        
+        for dest in dests:
+          isBot = dest.endswith('bot')
+          if isBot:
+            await client.send_message(dest, message)
+          else:
+            await bot.send_message(dest, message)
 
   elif type(event.to_id) == PeerUser:
     user = await client.get_entity(event.from_id)
