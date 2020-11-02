@@ -73,7 +73,7 @@ def wordWhiteList(message, words):
   timesWordRepeated = 0
 
   for word in wordsArr:
-    if word in message.message:
+    if word.lower() in message.message.lower():
       timesWordRepeated += 1
 
   if timesWordRepeated:
@@ -87,7 +87,7 @@ def wordBlackList(message, words):
   hasWords = False
 
   for word in wordsArr:
-    if word in message.message:
+    if word.lower() in message.message.lower():
       hasWords = True
 
   if hasWords:
@@ -111,14 +111,34 @@ def wordReplace(message, data):
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def addBefore(message, text):
-  newText = text + ' ' + message.message
+  seperator = ''
+
+  if text.endswith('>'):
+    seperator = '\n'
+    text = text[:-1]
+  else:
+    seperator = ' '
   
+  newText = text + seperator + message.message
+  
+  if message.entities:
+    for ent in message.entities:
+      ent.offset += len(text) + 1
+
   message.message = newText
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def addAfter(message, text):
-  newText = message.message + ' ' + text
+  seperator = ''
+
+  if text.endswith('>'):
+    seperator = '\n'
+    text = text[:-1]
+  else:
+    seperator = ' '
+  
+  newText = message.message + seperator + text
   
   message.message = newText
   
