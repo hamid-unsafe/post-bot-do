@@ -88,6 +88,20 @@ def userOwnsConnector(userId, conId):
   else:
     return False
 
+def setSiteId(userId, siteId):
+  try:
+    db.updateUser(userId, 'site_id', siteId)
+    return True
+  except:
+    return False
+
+def setBitlyToken(userId, token):
+  try:
+    db.updateUser(userId, 'bitly_token', token)
+    return True
+  except:
+    return False
+
 def getActiveConnectorSources(userId):
   res = db.exec_fetch('SELECT active_connector FROM users WHERE telegram_id = %s', (userId,))
 
@@ -105,7 +119,6 @@ def deleteConnector(conId):
     db.exec('DELETE FROM connectors WHERE id = %s', (conId,))
 
     return True
-
   except:
     return False
 

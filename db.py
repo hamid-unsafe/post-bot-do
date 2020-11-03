@@ -67,7 +67,7 @@ def initDB():
 
   exec('CREATE TABLE connectors (id SERIAL PRIMARY KEY, name varchar(32), owner_id integer, sources text[], destinations text[], rules text[])')
 
-  exec('CREATE TABLE users (id SERIAL PRIMARY KEY, name varchar, telegram_id integer, active_connector integer, membership text, is_admin boolean, current_action text)')
+  exec('CREATE TABLE users (id SERIAL PRIMARY KEY, name varchar, telegram_id integer, active_connector integer, bitly_token text, site_id text, membership text, is_admin boolean, current_action text)')
 
   closeDB()
 

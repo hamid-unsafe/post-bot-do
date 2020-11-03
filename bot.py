@@ -133,6 +133,32 @@ async def botCommandRecieved(event, command):
     
     await event.respond('✔️ you commands are canceled \n you can now start new actions \n or use /help\n\nsee your connectors /myconnectors')
     
+  # set site id
+  elif command.startswith('setsiteid'):
+    if len(command.split(' ')) == 1:
+      await event.respond('please add the id in the command, link this:\n/setsiteid <site-id>')
+    else:
+      siteId = command.split(' ')[1]
+
+      try:
+        funcs.setSiteId(event.from_id, siteId)
+        await event.respond('id saved')
+      except:
+        await event.respond('there was a problem, please contact support')
+    
+  # set bitly token
+  elif command.startswith('setbitlytoken'):
+    if len(command.split(' ')) == 1:
+      await event.respond('please add the token in the command, link this:\n/setbitlytoken <bitly-token>')
+    else:
+      token = command.split(' ')[1]
+
+      try:
+        funcs.setBitlyToken(event.from_id, token)
+        await event.respond('token saved')
+      except:
+        await event.respond('there was a problem, please contact support')
+
   # edit connector
   elif command.startswith('con'):
     conId = command.split('_')[1]
