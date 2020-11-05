@@ -1,7 +1,10 @@
 from urlextract import URLExtract
+import pycurl
 import re
+import json
 import requests
 import urllib.parse as urlparse 
+from urllib.parse import parse_qs
 
 shortLinkUrls = [
   'bit.ly',
@@ -34,49 +37,49 @@ def filterMessage(message, rules):
       # word rules:
       if ruleOptionCode == 1:
         # word white list
-        filterRes = wordWhiteList(newMessage, ruleData)
-        newMessage = filterRes['message']
+        filterRes = wordWhiteListRule(newMessage, ruleData)
+        newMessage = filterRes['1message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 2:
         # word black list
-        filterRes = wordBlackList(newMessage, ruleData)
+        filterRes = wordBlackListRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 3:
         # replace word
-        filterRes = wordReplace(newMessage, ruleData)
+        filterRes = wordReplaceRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 4:
         # add before
-        filterRes = addBefore(newMessage, ruleData)
+        filterRes = addBeforeRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 5:
         # add after
-        filterRes = addAfter(newMessage, ruleData)
+        filterRes = addAfterRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 6:
         # clear formatting
-        filterRes = clearFormatting(newMessage, ruleData)
+        filterRes = clearFormattingRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 7:
         # clear emojies
-        filterRes = clearemojies(newMessage, ruleData)
+        filterRes = clearemojiesRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
@@ -85,28 +88,56 @@ def filterMessage(message, rules):
       # content type rules
       if ruleOptionCode == 1:
         # ban links
-        filterRes = banIfHasLink(newMessage, ruleData)
+        filterRes = banIfHasLinkRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 2:
         # remvoe links
-        filterRes = removeLinks(newMessage, ruleData)
+        filterRes = removeLinksRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 3:
         # change params
-        filterRes = changeLinkParams(newMessage, ruleData)
+        filterRes = changeLinkParamsRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
       elif ruleOptionCode == 4:
         # change short link params
-        filterRes = changeShortLinkParams(newMessage, ruleData)
+        filterRes = changeShortLinkParamAndShortenRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 5:
+        # expand links
+        filterRes = expandLinksRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 6:
+        # shorten link
+        filterRes = shortenLinksRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 7:
+        # change params then shorten
+        filterRes = changeParamsAndShortenLinkRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 8:
+        # ronkovalley
+        filterRes = ronkovalleyLinkRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
@@ -119,7 +150,7 @@ def filterMessage(message, rules):
 
 
 # fuctions
-def wordWhiteList(message, words):
+def wordWhiteListRule(message, words):
   wordsArr = words.split(';')
 
   timesWordRepeated = 0
@@ -133,7 +164,7 @@ def wordWhiteList(message, words):
   else:
     return {'message': message, 'hasPassed': False, 'dontSend': True}
 
-def wordBlackList(message, words):
+def wordBlackListRule(message, words):
   wordsArr = words.split(';')
 
   hasWords = False
@@ -147,7 +178,7 @@ def wordBlackList(message, words):
   else:
     return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def wordReplace(message, data):
+def wordReplaceRule(message, data):
   listOfItems = data.split(';')
 
   messageText = message.message
@@ -166,7 +197,7 @@ def wordReplace(message, data):
 
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def addBefore(message, text):
+def addBeforeRule(message, text):
   seperator = ''
 
   if text.endswith('>'):
@@ -185,7 +216,7 @@ def addBefore(message, text):
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def addAfter(message, text):
+def addAfterRule(message, text):
   seperator = ''
 
   if text.endswith('>'):
@@ -200,12 +231,12 @@ def addAfter(message, text):
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def clearFormatting(message, data):
+def clearFormattingRule(message, data):
   message.entities = []
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def banIfHasLink(message, data):
+def banIfHasLinkRule(message, data):
   messageText = message.message
 
   extractor = URLExtract()
@@ -217,7 +248,7 @@ def banIfHasLink(message, data):
   else:
     return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def removeLinks(message, data):
+def removeLinksRule(message, data):
   messageText = message.message
   
   extractor = URLExtract()
@@ -236,10 +267,18 @@ def removeLinks(message, data):
 def addParamToLink(url, listOfParams):
   params = {}
   for item in listOfParams:
-    splitResult = item.split(':')
-    param = splitResult[0]
-    value = splitResult[1]
-    params[param] = value
+    if item.endswith('?'):
+      item = item[:-1]
+      splitResult = item.split(':')
+      param = splitResult[0]
+      value = splitResult[1]
+      if param in url:
+        params[param] = value
+    else:
+      splitResult = item.split(':')
+      param = splitResult[0]
+      value = splitResult[1]
+      params[param] = value
   url_parse = urlparse.urlparse(url)
   query = url_parse.query
   url_dict = dict(urlparse.parse_qsl(query))
@@ -250,46 +289,74 @@ def addParamToLink(url, listOfParams):
   return new_url
 
 def shortenUrl(url, token):
-  payload = {
-    'long_url': url
-  }
-
+  payload = None
+  if url.startswith('http'):
+    payload = {
+      'long_url': url
+    }
+  else:
+    payload = {
+      'long_url': 'http://' + url
+    }
+  
   headers = {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ' + token
   }
   
-  response = requests.post('https://api-ssl.bitly.com/v4/shorten', data=json.dumps(payload), headers=headers)
-
-  return response.json()['link']
-
-def shortenUrl(url, token):
-  payload = {
-    'long_url': url
-  }
-
-  headers = {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + token
-  }
+  response = None
   
   response = requests.post('https://api-ssl.bitly.com/v4/shorten', data=json.dumps(payload), headers=headers)
 
   return response.json()['link']
 
 def expandUrl(url):
-  response = None
-  
-  try:
-    response = requests.get(url)
-  except Exception as e:
-    if type(e) == requests.exceptions.MissingSchema:
-      url = 'https://' + url
-      response = requests.get(url)
+  newUrl = url
 
-  return response.history[len(response.history)-1].url
+  for shortUrl in shortLinkUrls:
+    if shortUrl in url:
+      if 'ekaro.in' in url.lower():
+        retrieved_headers = Storage()
 
-def changeLinkParams(message, data):
+        c = pycurl.Curl()
+        c.setopt(pycurl.CAINFO, certifi.where())
+        c.setopt(c.URL, url)
+        c.setopt(c.HEADERFUNCTION, retrieved_headers.store)
+        c.perform()
+        c.close()
+        url = retrieved_headers.location
+        parsed = urlparse.urlparse(url)
+        newUrl = parse_qs(parsed.query)['dl'][0]
+      else:
+        response = None
+      
+        try:
+          response = requests.get(url)
+        except Exception as e:
+          if type(e) == requests.exceptions.MissingSchema:
+            url = 'https://' + url
+            response = requests.get(url)
+
+        newUrl = response.history[len(response.history)-1].url
+
+  return newUrl
+
+class Storage:
+  def __init__(self):
+    self.contents = ''
+    self.location = ''
+    self.line = 0
+
+  def store(self, buf):
+    if str(buf)[2:-5].lower().startswith('location'):
+      self.location = str(buf)[12:-5]
+    self.line = self.line + 1
+    self.contents = "%s%i: %s" % (self.contents, self.line, buf)
+
+  def __str__(self):
+    return str(self.contents)
+
+def changeLinkParamsRule(message, data):
   messageText = message.message
 
   extractor = URLExtract()
@@ -306,7 +373,7 @@ def changeLinkParams(message, data):
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def changeShortLinkParams(message, data):
+def changeShortLinkParamAndShortenRule(message, data):
   global shortLinkUrls
   
   messageText = message.message
@@ -347,13 +414,127 @@ def deEmojify(text):
                            "]+", flags = re.UNICODE)
   return regrex_pattern.sub(r'',text)
 
-def clearemojies(message, data):
+def clearemojiesRule(message, data):
   messageText = message.message
 
   messageText = deEmojify(messageText)
 
   messageText = messageText.replace('  ', ' ')
 
+  message.message = messageText
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def expandLinksRule(message, data):
+  messageText = message.message
+
+  extractor = URLExtract()
+
+  urls = extractor.find_urls(messageText)
+
+  for url in urls:
+    expandedUrl = expandUrl(url)
+
+    messageText = messageText.replace(url, expandedUrl)
+  
+  message.message = messageText
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def shortenLinksRule(message, data):
+  global shortLinkUrls
+  
+  messageText = message.message
+  token = data
+
+  extractor = URLExtract()
+
+  urls = extractor.find_urls(messageText)
+
+  for url in urls:
+    newUrl = shortenUrl(url, token)
+
+    messageText = messageText.replace(url, newUrl)
+  
+  message.message = messageText
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def changeParamsAndShortenLinkRule(message, data):
+  global shortLinkUrls
+  
+  messageText = message.message
+
+  ruleData = data.split('|')
+
+  token = ruleData[1]
+  paramsAndValues = ruleData[0]
+
+  extractor = URLExtract()
+
+  urls = extractor.find_urls(messageText)
+
+  for url in urls:
+    expandedUrl = url
+    
+    for shortener in shortLinkUrls:
+      if shortener in url.lower():
+        expandedUrl = expandUrl(url)
+
+    paramGroups = paramsAndValues.split(';')
+    expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
+
+    messageText = messageText.replace(url, expandedUrlWithNewParams)
+  
+  message.message = messageText
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def makeRonkoLink(url, ronkoId):
+  UrlEncodedId = urllib.quote_plus(ronkoId)
+  UrlEncodedUrl = urllib.quote_plus(url)
+  
+  rnkoUrl = 'https://roanokevalleyredcross.org/blog.html?'
+  rnkoUrl += f'?id={UrlEncodedId}'
+  rnkoUrl += f'&url={UrlEncodedUrl}'
+  
+  return rnkoUrl
+
+def ronkovalleyLinkRule(message, data):
+  global shortLinkUrls
+  
+  messageText = message.message
+
+  ruleData = data.split('|')
+
+  paramsAndValues = ruleData[0]
+  token = ruleData[1]
+  ronkoId = ruleData[2]
+
+  extractor = URLExtract()
+
+  urls = extractor.find_urls(messageText)
+
+  for url in urls:
+    expandedUrl = url
+    
+    for shortener in shortLinkUrls:
+      if shortener in url.lower():
+        expandedUrl = expandUrl(url)
+
+    paramGroups = paramsAndValues.split(';')
+    expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
+
+    newUrl = expandedUrl
+
+    if expandedUrlWithNewParams.startswith('https://amazon') or expandedUrlWithNewParams.startswith('http://amazon') or expandedUrlWithNewParams.startswith('amazon'):
+      newUrl = shortenUrl(expandedUrlWithNewParams, token)
+    else:
+      ronkoLink = makeRonkoLink(expandedUrlWithNewParams, ronkoId)
+      newUrl = shortenUrl(ronkoLink, token)
+
+    messageText = messageText.replace(url, newUrl)
+  
   message.message = messageText
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
