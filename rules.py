@@ -491,8 +491,8 @@ def changeParamsAndShortenLinkRule(message, data):
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def makeRonkoLink(url, ronkoId):
-  UrlEncodedId = urllib.quote_plus(ronkoId)
-  UrlEncodedUrl = urllib.quote_plus(url)
+  UrlEncodedId = urlparse.quote_plus(ronkoId)
+  UrlEncodedUrl = urlparse.quote_plus(url)
   
   rnkoUrl = 'https://roanokevalleyredcross.org/blog.html?'
   rnkoUrl += f'?id={UrlEncodedId}'
