@@ -1,4 +1,5 @@
 from urlextract import URLExtract
+import certifi
 import pycurl
 import re
 import json
@@ -315,21 +316,21 @@ def expandUrl(url):
 
   for shortUrl in shortLinkUrls:
     if shortUrl in url:
-      if True:
-        retrieved_headers = Storage()
+      retrieved_headers = Storage()
 
-        c = pycurl.Curl()
-        c.setopt(pycurl.CAINFO, certifi.where())
-        c.setopt(c.URL, url)
-        c.setopt(c.HEADERFUNCTION, retrieved_headers.store)
-        c.perform()
-        c.close()
-        location = retrieved_headers.location
-        if 'tracking.earnkaro.com' in location:
-          parsed = urlparse.urlparse(location)
-          newUrl = parse_qs(parsed.query)['dl'][0]
-        else:
-          newUrl = location
+      c = pycurl.Curl()
+      c.setopt(pycurl.CAINFO, certifi.where())
+      c.setopt(c.URL, url)
+      c.setopt(pycurl.WRITEFUNCTION, lambda x: None)
+      c.setopt(c.HEADERFUNCTION, retrieved_headers.store)
+      c.perform()
+      c.close()
+      location = retrieved_headers.location
+      if 'tracking.earnkaro.com' in location:
+        parsed = urlparse.urlparse(location)
+        newUrl = parse_qs(parsed.query)['dl'][0]
+      else:
+        newUrl = location
   
   return newUrl
 
@@ -483,13 +484,13 @@ def changeParamsAndShortenLinkRule(message, data):
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def makeRonokoLink(url, ronokoId):
-  UrlEncodedId = urllib.quote_plus(ronokoId)
-  UrlEncodedUrl = urllib.quote_plus(url)
+  UrlEncodedId = urlparse.quote_plus(ronokoId)
+  UrlEncodedUrl = urlparse.quote_plus(url)
   
   rnkoUrl = 'https://roanokevalleyredcross.org/blog.html?'
   rnkoUrl += f'?id={UrlEncodedId}'
   rnkoUrl += f'&url={UrlEncodedUrl}'
-  
+
   return rnkoUrl
 
 def ronkovalleyLinkRule(message, data):
@@ -506,7 +507,6 @@ def ronkovalleyLinkRule(message, data):
   extractor = URLExtract()
 
   urls = extractor.find_urls(messageText)
-
 
   for url in urls:
     expandedUrl = url
