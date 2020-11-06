@@ -315,7 +315,7 @@ def expandUrl(url):
 
   for shortUrl in shortLinkUrls:
     if shortUrl in url:
-      if 'ekaro.in' in url.lower():
+      if True:
         retrieved_headers = Storage()
 
         c = pycurl.Curl()
@@ -324,21 +324,13 @@ def expandUrl(url):
         c.setopt(c.HEADERFUNCTION, retrieved_headers.store)
         c.perform()
         c.close()
-        url = retrieved_headers.location
-        parsed = urlparse.urlparse(url)
-        newUrl = parse_qs(parsed.query)['dl'][0]
-      else:
-        response = None
-      
-        try:
-          response = requests.get(url)
-        except Exception as e:
-          if type(e) == requests.exceptions.MissingSchema:
-            url = 'https://' + url
-            response = requests.get(url)
-
-        newUrl = response.history[len(response.history)-1].url
-
+        location = retrieved_headers.location
+        if 'tracking.earnkaro.com' in location:
+          parsed = urlparse.urlparse(location)
+          newUrl = parse_qs(parsed.query)['dl'][0]
+        else:
+          newUrl = location
+  
   return newUrl
 
 class Storage:
@@ -490,9 +482,9 @@ def changeParamsAndShortenLinkRule(message, data):
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
-def makeRonkoLink(url, ronkoId):
-  UrlEncodedId = urlparse.quote_plus(ronkoId)
-  UrlEncodedUrl = urlparse.quote_plus(url)
+def makeRonokoLink(url, ronokoId):
+  UrlEncodedId = urllib.quote_plus(ronokoId)
+  UrlEncodedUrl = urllib.quote_plus(url)
   
   rnkoUrl = 'https://roanokevalleyredcross.org/blog.html?'
   rnkoUrl += f'?id={UrlEncodedId}'
@@ -509,11 +501,12 @@ def ronkovalleyLinkRule(message, data):
 
   paramsAndValues = ruleData[0]
   token = ruleData[1]
-  ronkoId = ruleData[2]
+  ronokoId = ruleData[2]
 
   extractor = URLExtract()
 
   urls = extractor.find_urls(messageText)
+
 
   for url in urls:
     expandedUrl = url
@@ -525,13 +518,13 @@ def ronkovalleyLinkRule(message, data):
     paramGroups = paramsAndValues.split(';')
     expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
 
-    newUrl = expandedUrl
+    newUrl = expandedUrlWithNewParams
 
     if expandedUrlWithNewParams.startswith('https://amazon') or expandedUrlWithNewParams.startswith('http://amazon') or expandedUrlWithNewParams.startswith('amazon'):
       newUrl = shortenUrl(expandedUrlWithNewParams, token)
     else:
-      ronkoLink = makeRonkoLink(expandedUrlWithNewParams, ronkoId)
-      newUrl = shortenUrl(ronkoLink, token)
+      ronokoLink = makeRonokoLink(expandedUrlWithNewParams, ronokoId)
+      newUrl = shortenUrl(ronokoLink, token)
 
     messageText = messageText.replace(url, newUrl)
   
