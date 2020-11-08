@@ -1,11 +1,24 @@
 from urlextract import URLExtract
 import certifi
 import pycurl
+import sys
+import os
+import traceback
 import re
 import json
 import requests
 import urllib.parse as urlparse 
 from urllib.parse import parse_qs
+
+ruleDataSeperator = '<_>'
+wordSeperator = '<;>'
+wordReplaceGroupSeperator = '<;>'
+wordReplaceSeperator = '<:>'
+messageNextLineCharacter = '<>>'
+paramValueGroupSeperator = '<;>'
+paramValueSeperator = '<:>'
+generalSeperator = '<|>'
+
 
 shortLinkUrls = [
   'bit.ly',
@@ -15,6 +28,10 @@ shortLinkUrls = [
   'clnk.in',
   'ekaro.in',
   'fas.st',
+  'dl.flipkart.com',
+  'gluv.in',
+  'affiliaters.in',
+  'autoaffiliate.in',
 ]
 
 def filterMessage(message, rules):
@@ -27,7 +44,7 @@ def filterMessage(message, rules):
   dontSend = False
 
   for rule in rules:
-    data = rule.split('_')
+    data = rule.split(ruleDataSeperator)
 
     ruleCode = int(data[0])
     ruleOptionCode = int(data[1])
@@ -152,7 +169,7 @@ def filterMessage(message, rules):
 
 # fuctions
 def wordWhiteListRule(message, words):
-  wordsArr = words.split(';')
+  wordsArr = words.split(wordSeperator)
 
   timesWordRepeated = 0
 
@@ -166,7 +183,7 @@ def wordWhiteListRule(message, words):
     return {'message': message, 'hasPassed': False, 'dontSend': True}
 
 def wordBlackListRule(message, words):
-  wordsArr = words.split(';')
+  wordsArr = words.split(wordSeperator)
 
   hasWords = False
 
@@ -180,12 +197,12 @@ def wordBlackListRule(message, words):
     return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def wordReplaceRule(message, data):
-  listOfItems = data.split(';')
+  listOfItems = data.split(wordReplaceGroupSeperator)
 
   messageText = message.message
 
   for item in listOfItems:
-    words = item.split(':')
+    words = item.split(wordReplaceSeperator)
     word1 = words[0]
     word2 = words[1]
 
@@ -201,7 +218,7 @@ def wordReplaceRule(message, data):
 def addBeforeRule(message, text):
   seperator = ''
 
-  if text.endswith('>'):
+  if text.endswith(messageNextLineCharacter):
     seperator = '\n'
     text = text[:-1]
   else:
@@ -220,7 +237,7 @@ def addBeforeRule(message, text):
 def addAfterRule(message, text):
   seperator = ''
 
-  if text.endswith('>'):
+  if text.endswith(messageNextLineCharacter):
     seperator = '\n'
     text = text[:-1]
   else:
@@ -266,18 +283,20 @@ def removeLinksRule(message, data):
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def addParamToLink(url, listOfParams):
+  url = url.lower()
+  
   params = {}
   for item in listOfParams:
     if item.endswith('?'):
       item = item[:-1]
-      splitResult = item.split(':')
+      splitResult = item.split(paramValueSeperator)
       param = splitResult[0]
       value = splitResult[1]
-      if param in url:
+      if param.lower() in url:
         params[param] = value
     else:
-      splitResult = item.split(':')
-      param = splitResult[0]
+      splitResult = item.split(paramValueSeperator)
+      param = splitResult[0].lower()
       value = splitResult[1]
       params[param] = value
   url_parse = urlparse.urlparse(url)
@@ -321,14 +340,19 @@ def expandUrl(url):
       c = pycurl.Curl()
       c.setopt(pycurl.CAINFO, certifi.where())
       c.setopt(c.URL, url)
+      c.setopt(pycurl.HTTPHEADER, ['User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'])
       c.setopt(pycurl.WRITEFUNCTION, lambda x: None)
+      c.setopt(pycurl.FOLLOWLOCATION, 100)
       c.setopt(c.HEADERFUNCTION, retrieved_headers.store)
       c.perform()
       c.close()
       location = retrieved_headers.location
       if 'tracking.earnkaro.com' in location:
         parsed = urlparse.urlparse(location)
-        newUrl = parse_qs(parsed.query)['dl'][0]
+        if 'dl' in parse_qs(parsed.query):
+          newUrl = parse_qs(parsed.query)['dl'][0]
+        else:
+          newUrl = location
       else:
         newUrl = location
   
@@ -357,7 +381,7 @@ def changeLinkParamsRule(message, data):
   urls = extractor.find_urls(messageText)
 
   for url in urls:
-    paramGroups = data.split(';')
+    paramGroups = data.split(paramValueGroupSeperator)
     newUrl = addParamToLink(url, paramGroups)
 
     messageText = messageText.replace(url, newUrl)
@@ -371,7 +395,7 @@ def changeShortLinkParamAndShortenRule(message, data):
   
   messageText = message.message
 
-  ruleData = data.split('|')
+  ruleData = data.split(generalSeperator)
 
   token = ruleData[1]
   paramsAndValues = ruleData[0]
@@ -387,7 +411,7 @@ def changeShortLinkParamAndShortenRule(message, data):
       if shortener in url.lower():
         expandedUrl = expandUrl(url)
 
-    paramGroups = paramsAndValues.split(';')
+    paramGroups = paramsAndValues.split(paramValueGroupSeperator)
     expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
 
     newUrl = shortenUrl(expandedUrlWithNewParams, token)
@@ -445,7 +469,12 @@ def shortenLinksRule(message, data):
   urls = extractor.find_urls(messageText)
 
   for url in urls:
-    newUrl = shortenUrl(url, token)
+    try:
+      link = url
+      newUrl = shortenUrl(link, token)
+    except Exception as e:
+      exc_type, exc_obj, exc_tb = sys.exc_info()
+      fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
 
     messageText = messageText.replace(url, newUrl)
   
@@ -458,7 +487,7 @@ def changeParamsAndShortenLinkRule(message, data):
   
   messageText = message.message
 
-  ruleData = data.split('|')
+  ruleData = data.split(generalSeperator)
 
   token = ruleData[1]
   paramsAndValues = ruleData[0]
@@ -468,16 +497,11 @@ def changeParamsAndShortenLinkRule(message, data):
   urls = extractor.find_urls(messageText)
 
   for url in urls:
-    expandedUrl = url
-    
-    for shortener in shortLinkUrls:
-      if shortener in url.lower():
-        expandedUrl = expandUrl(url)
+    paramGroups = paramsAndValues.split(paramValueGroupSeperator)
+    urlWithNewParams = addParamToLink(url, paramGroups)
+    shortedUrl = shortenUrl(urlWithNewParams, token)
 
-    paramGroups = paramsAndValues.split(';')
-    expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
-
-    messageText = messageText.replace(url, expandedUrlWithNewParams)
+    messageText = messageText.replace(url, shortedUrl)
   
   message.message = messageText
   
@@ -498,7 +522,7 @@ def ronkovalleyLinkRule(message, data):
   
   messageText = message.message
 
-  ruleData = data.split('|')
+  ruleData = data.split(generalSeperator)
 
   paramsAndValues = ruleData[0]
   token = ruleData[1]
@@ -515,7 +539,7 @@ def ronkovalleyLinkRule(message, data):
       if shortener in url.lower():
         expandedUrl = expandUrl(url)
 
-    paramGroups = paramsAndValues.split(';')
+    paramGroups = paramsAndValues.split(paramValueGroupSeperator)
     expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
 
     newUrl = expandedUrlWithNewParams
