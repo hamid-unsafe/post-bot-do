@@ -17,6 +17,7 @@ wordReplaceSeperator = '<:>'
 messageNextLineCharacter = '<>>'
 paramValueGroupSeperator = '<;>'
 paramValueSeperator = '<:>'
+paramOptionalChar = '<?>'
 generalSeperator = '<|>'
 
 
@@ -283,25 +284,43 @@ def removeLinksRule(message, data):
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def addParamToLink(url, listOfParams):
-  url = url.lower()
-  
+  def getParam(param, params):
+    params = list(params)
+    LP = [item.lower() for item in params]
+    index = LP.index(param.lower())
+    return params[index]
+
+  def hasParam(param, params):
+    param = param.lower()
+    params = list(params)
+    LP = [item.lower() for item in params]
+    return param in LP
+    
   params = {}
+  url_parse = urlparse.urlparse(url)
+  query = url_parse.query
+  url_dict = dict(urlparse.parse_qsl(query))
   for item in listOfParams:
-    if item.endswith('?'):
-      item = item[:-1]
+    if item.endswith(paramOptionalChar):
+      item = item[:-len(paramOptionalChar)]
       splitResult = item.split(paramValueSeperator)
       param = splitResult[0]
       value = splitResult[1]
-      if param.lower() in url:
-        params[param] = value
+      if param.lower() in url.lower():
+        if hasParam(param, url_dict.keys()):
+          del url_dict[getParam(param, url_dict.keys())]
+          params[param] = value
+        else:
+          params[param] = value
     else:
       splitResult = item.split(paramValueSeperator)
       param = splitResult[0].lower()
       value = splitResult[1]
-      params[param] = value
-  url_parse = urlparse.urlparse(url)
-  query = url_parse.query
-  url_dict = dict(urlparse.parse_qsl(query))
+      if hasParam(param, url_dict.keys()):
+        del url_dict[getParam(param, url_dict.keys())]
+        params[param] = value
+      else:
+        params[param] = value
   url_dict.update(params)
   url_new_query = urlparse.urlencode(url_dict)
   url_parse = url_parse._replace(query=url_new_query)
@@ -344,7 +363,10 @@ def expandUrl(url):
       c.setopt(pycurl.WRITEFUNCTION, lambda x: None)
       c.setopt(pycurl.FOLLOWLOCATION, 100)
       c.setopt(c.HEADERFUNCTION, retrieved_headers.store)
-      c.perform()
+      try:
+        c.perform()
+      except:
+        pass
       c.close()
       location = retrieved_headers.location
       if 'tracking.earnkaro.com' in location:
