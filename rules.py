@@ -8,7 +8,7 @@ import re
 import json
 import requests
 import urllib.parse as urlparse 
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, unquote
 
 ruleDataSeperator = '<_>'
 wordSeperator = '<;>'
@@ -203,15 +203,17 @@ def wordReplaceRule(message, data):
   messageText = message.message
 
   for item in listOfItems:
-    words = item.split(wordReplaceSeperator)
-    word1 = words[0]
-    word2 = words[1]
+    if item:
+      words = item.split(wordReplaceSeperator)
+      word1 = words[0]
+      word2 = words[1]
 
-    patt = re.compile(word1, re.IGNORECASE)
-    result = patt.sub(word2, messageText)
-    
-    messageText = result
+      patt = re.compile(word1, re.IGNORECASE)
+      result = patt.sub(word2, messageText)
+      
+      messageText = result
 
+  messageText = ' '.join(messageText.split())
   message.message = messageText
 
   return {'message': message, 'hasPassed': True, 'dontSend': False}
@@ -221,7 +223,7 @@ def addBeforeRule(message, text):
 
   if text.endswith(messageNextLineCharacter):
     seperator = '\n'
-    text = text[:-1]
+    text = text[:-len(messageNextLineCharacter)]
   else:
     seperator = ' '
   
@@ -240,7 +242,7 @@ def addAfterRule(message, text):
 
   if text.endswith(messageNextLineCharacter):
     seperator = '\n'
-    text = text[:-1]
+    text = text[:-len(messageNextLineCharacter)]
   else:
     seperator = ' '
   
@@ -284,6 +286,7 @@ def removeLinksRule(message, data):
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def addParamToLink(url, listOfParams):
+  url = unquote(url)
   def getParam(param, params):
     params = list(params)
     LP = [item.lower() for item in params]
@@ -533,7 +536,7 @@ def makeRonokoLink(url, ronokoId):
   UrlEncodedId = urlparse.quote_plus(ronokoId)
   UrlEncodedUrl = urlparse.quote_plus(url)
   
-  rnkoUrl = 'https://roanokevalleyredcross.org/blog.html?'
+  rnkoUrl = 'https://roanokevalleyredcross.org/blog.html'
   rnkoUrl += f'?id={UrlEncodedId}'
   rnkoUrl += f'&url={UrlEncodedUrl}'
 
@@ -566,7 +569,7 @@ def ronkovalleyLinkRule(message, data):
 
     newUrl = expandedUrlWithNewParams
 
-    if expandedUrlWithNewParams.startswith('https://amazon') or expandedUrlWithNewParams.startswith('http://amazon') or expandedUrlWithNewParams.startswith('amazon'):
+    if expandedUrlWithNewParams.startswith('https://www.amazon') or expandedUrlWithNewParams.startswith('https://amazon') or expandedUrlWithNewParams.startswith('http://www.amazon') or expandedUrlWithNewParams.startswith('http://amazon') or expandedUrlWithNewParams.startswith('amazon') or expandedUrlWithNewParams.startswith('www.amazon'):
       newUrl = shortenUrl(expandedUrlWithNewParams, token)
     else:
       ronokoLink = makeRonokoLink(expandedUrlWithNewParams, ronokoId)
