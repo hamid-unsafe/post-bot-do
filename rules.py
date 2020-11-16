@@ -9,6 +9,7 @@ import json
 import requests
 import urllib.parse as urlparse 
 from urllib.parse import parse_qs, unquote
+from telethon.tl.types import MessageMediaPhoto
 
 ruleDataSeperator = '<_>'
 wordSeperator = '<;>'
@@ -18,7 +19,9 @@ messageNextLineCharacter = '<>>'
 paramValueGroupSeperator = '<;>'
 paramValueSeperator = '<:>'
 paramOptionalChar = '<?>'
+urlSeperator = '<;>'
 generalSeperator = '<|>'
+mediaSeperator = ';'
 
 
 shortLinkUrls = [
@@ -161,12 +164,48 @@ def filterMessage(message, rules):
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 9:
+        # ban url in expanedd link
+        filterRes = linkInExpandedUrlBlackList(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 10:
+        # link in expanded url white list
+        filterRes = linkInExpandedUrlWhiteList(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+    elif ruleCode == 3:
+      if ruleOptionCode == 1:
+        # Ban all Medias
+        filterRes = banAllMediaRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 2:
+        # Media white list
+        filterRes = mediaWhiteListRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 3:
+        # Media black list
+        filterRes = mediaBlackListRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
 
+  
   if dontSend == True:
     return { 'message': newMessage, 'hasPassed': False }
   else:
     return { 'message': newMessage, 'hasPassed': hasPassed }
-
 
 # fuctions
 def wordWhiteListRule(message, words):
@@ -580,3 +619,118 @@ def ronkovalleyLinkRule(message, data):
   message.message = messageText
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def linkInExpandedUrlBlackList(message, data):
+  global shortLinkUrls
+  
+  hasBannedUrl = False
+  
+  messageText = message.message
+
+  blockedUrls = data.split(urlSeperator)
+
+  extractor = URLExtract()
+
+  urls = extractor.find_urls(messageText)
+
+  for url in urls:
+    expandedUrl = expandUrl(url)
+
+    for u in blockedUrls:
+      if u.lower() in expandedUrl.lower():
+        hasBannedUrl = True
+  
+  if hasBannedUrl:
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+  else:
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def linkInExpandedUrlWhiteList(message, data):
+  global shortLinkUrls
+  
+  hasWhiteUrl = False
+  
+  messageText = message.message
+
+  whiteUrls = data.split(urlSeperator)
+
+  extractor = URLExtract()
+
+  urls = extractor.find_urls(messageText)
+
+  for url in urls:
+    expandedUrl = expandUrl(url)
+
+    for u in whiteUrls:
+      if u.lower() in expandedUrl.lower():
+        hasWhiteUrl = True
+  
+  if hasWhiteUrl:
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
+  else:
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+
+def banAllMediaRule(message, data):
+  hasMedia = False
+
+  if message.media:
+    hasMedia = True
+  else:
+    hasMedia = False
+  
+  if hasMedia:
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+  else:
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def getMediaType(media):
+  # list of types : image | audio | video | document | unknown
+  MT = 'unknown'
+  if type(media) == MessageMediaPhoto:
+    MT = 'image'
+  elif media.document.mime_type.startswith('image'):
+    MT = 'image'
+  elif media.document.mime_type.startswith('video'):
+    MT = 'video'
+  elif media.document.mime_type.startswith('audio'):
+    MT = 'audio'
+  elif media.document.mime_type.startswith('application'):
+    MT = 'document'
+  elif media.document.mime_type.startswith('text'):
+    MT = 'document'
+
+  return MT
+
+def mediaWhiteListRule(message, data):
+  allowedMedias = data.split(mediaSeperator)
+  hasPassed = True
+  
+  messageMediaType = getMediaType(message.media)
+  
+  if messageMediaType in allowedMedias:
+    hasPassed = True
+  else:
+    hasPassed = False
+
+  if hasPassed:
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
+  else:
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+
+def mediaBlackListRule(message, data):
+  notAllowedMedias = data.split(mediaSeperator)
+  hasPassed = True
+  
+  messageMediaType = getMediaType(message.media)
+  
+  if messageMediaType in notAllowedMedias:
+    hasPassed = False
+  else:
+    hasPassed = True
+
+  if hasPassed:
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
+  else:
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+
+ 

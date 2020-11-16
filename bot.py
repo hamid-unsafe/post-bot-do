@@ -4,6 +4,8 @@ from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.sync import events
 from telethon import functions, types
 from telethon.tl.types import PeerChannel, PeerUser
+from telethon.tl.types import MessageMediaPhoto
+from telethon.utils import get_input_photo, resolve_bot_file_id, pack_bot_file_id
 import telethon
 import app_functions as funcs
 import requests
@@ -48,11 +50,16 @@ async def bot_new_message_handler(event):
 
 @client.on(events.NewMessage)
 async def new_message_handler(event):
-  if type(event.to_id) == PeerChannel:
-    channel = await client.get_entity(event.to_id.channel_id)
+  print('new message')
+  if type(event.to_id) == PeerChannel or type(event.message.to_id) == PeerChannel:
+    if event.to_id:
+      channel = await client.get_entity(event.to_id.channel_id)
+    else:
+      channel = await client.get_entity(event.message.to_id.channel_id)
     channelUsername = channel.username
 
-    message = event.message
+    # message = event.message
+    message = await bot.get_messages(channelUsername, ids=event.message.id)
 
     destAndRules = funcs.getDestAndRuleWithSource(channelUsername)
     
@@ -392,9 +399,7 @@ async def botCommandRecieved(event, command):
 
   # test command
   elif command == 'test':
-    ent = await bot.get_entity('Agha_abollfazl')
-
-    print(ent)
+    print('test')
     
     await event.respond('test response')
   
