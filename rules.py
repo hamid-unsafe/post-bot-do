@@ -9,7 +9,7 @@ import json
 import requests
 import urllib.parse as urlparse 
 from urllib.parse import parse_qs, unquote
-from telethon.tl.types import MessageMediaPhoto
+from telethon.tl.types import MessageMediaPhoto, MessageMediaWebPage, MessageEntityTextUrl
 
 ruleDataSeperator = '<_>'
 wordSeperator = '<;>'
@@ -21,7 +21,7 @@ paramValueSeperator = '<:>'
 paramOptionalChar = '<?>'
 urlSeperator = '<;>'
 generalSeperator = '<|>'
-mediaSeperator = ';'
+mediaSeperator = '<;>'
 
 
 shortLinkUrls = [
@@ -60,7 +60,7 @@ def filterMessage(message, rules):
       if ruleOptionCode == 1:
         # word white list
         filterRes = wordWhiteListRule(newMessage, ruleData)
-        newMessage = filterRes['1message']
+        newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
@@ -200,8 +200,14 @@ def filterMessage(message, rules):
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 4:
+        # remove media from message
+        filterRes = removeMediaFromMessageRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
 
-  
   if dontSend == True:
     return { 'message': newMessage, 'hasPassed': False }
   else:
@@ -252,7 +258,8 @@ def wordReplaceRule(message, data):
       
       messageText = result
 
-  messageText = ' '.join(messageText.split())
+  # messageText = ' '.join(messageText.split())
+  messageText = message.replace('  ', ' ')
   message.message = messageText
 
   return {'message': message, 'hasPassed': True, 'dontSend': False}
@@ -299,9 +306,16 @@ def clearFormattingRule(message, data):
 def banIfHasLinkRule(message, data):
   messageText = message.message
 
+  hasLink = False
+
   extractor = URLExtract()
 
-  hasLink = extractor.has_urls(messageText)
+  if extractor.has_urls(deEmojify(messageText)):
+    hasLink = True
+  elif message.entities:
+    for ent in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        hasLink = True
   
   if hasLink:
     return {'message': message, 'hasPassed': False, 'dontSend': True}
@@ -313,10 +327,15 @@ def removeLinksRule(message, data):
   
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
     messageText = messageText.replace(url, '')
+    
+  if message.entities:
+    for ent in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        ent.length = 0
   
   messageText = messageText.replace('  ', ' ')
 
@@ -442,13 +461,19 @@ def changeLinkParamsRule(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  paramGroups = data.split(paramValueGroupSeperator)
+
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
-    paramGroups = data.split(paramValueGroupSeperator)
     newUrl = addParamToLink(url, paramGroups)
 
     messageText = messageText.replace(url, newUrl)
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        ent.url = addParamToLink(ent.url, paramGroups)
   
   message.message = messageText
   
@@ -466,7 +491,7 @@ def changeShortLinkParamAndShortenRule(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
     expandedUrl = url
@@ -481,6 +506,22 @@ def changeShortLinkParamAndShortenRule(message, data):
     newUrl = shortenUrl(expandedUrlWithNewParams, token)
 
     messageText = messageText.replace(url, newUrl)
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        expandedUrl = ent.url
+    
+        for shortener in shortLinkUrls:
+          if shortener in ent.url.lower():
+            expandedUrl = expandUrl(ent.url)
+
+        paramGroups = paramsAndValues.split(paramValueGroupSeperator)
+        expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
+
+        newUrl = shortenUrl(expandedUrlWithNewParams, token)
+
+        ent.url = newUrl
   
   message.message = messageText
   
@@ -511,12 +552,19 @@ def expandLinksRule(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
     expandedUrl = expandUrl(url)
 
     messageText = messageText.replace(url, expandedUrl)
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        expandedUrl = expandUrl(ent.url)
+
+        ent.url = expandedUrl
   
   message.message = messageText
   
@@ -530,17 +578,19 @@ def shortenLinksRule(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
-    try:
-      link = url
-      newUrl = shortenUrl(link, token)
-    except Exception as e:
-      exc_type, exc_obj, exc_tb = sys.exc_info()
-      fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    newUrl = shortenUrl(url, token)
 
     messageText = messageText.replace(url, newUrl)
+  
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        newUrl = shortenUrl(ent.url, token)
+
+        ent.url = newUrl
   
   message.message = messageText
   
@@ -558,7 +608,7 @@ def changeParamsAndShortenLinkRule(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
     paramGroups = paramsAndValues.split(paramValueGroupSeperator)
@@ -566,6 +616,15 @@ def changeParamsAndShortenLinkRule(message, data):
     shortedUrl = shortenUrl(urlWithNewParams, token)
 
     messageText = messageText.replace(url, shortedUrl)
+  
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        paramGroups = paramsAndValues.split(paramValueGroupSeperator)
+        urlWithNewParams = addParamToLink(ent.url, paramGroups)
+        shortedUrl = shortenUrl(urlWithNewParams, token)
+
+        ent.url = shortedUrl
   
   message.message = messageText
   
@@ -594,7 +653,7 @@ def ronkovalleyLinkRule(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
     expandedUrl = url
@@ -615,6 +674,29 @@ def ronkovalleyLinkRule(message, data):
       newUrl = shortenUrl(ronokoLink, token)
 
     messageText = messageText.replace(url, newUrl)
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        expandedUrl = ent.url
+        
+        for shortener in shortLinkUrls:
+          if shortener in ent.url.lower():
+            expandedUrl = expandUrl(ent.url)
+
+        paramGroups = paramsAndValues.split(paramValueGroupSeperator)
+        expandedUrlWithNewParams = addParamToLink(expandedUrl, paramGroups)
+
+        newUrl = expandedUrlWithNewParams
+
+        if expandedUrlWithNewParams.startswith('https://www.amazon') or expandedUrlWithNewParams.startswith('https://amazon') or expandedUrlWithNewParams.startswith('http://www.amazon') or expandedUrlWithNewParams.startswith('http://amazon') or expandedUrlWithNewParams.startswith('amazon') or expandedUrlWithNewParams.startswith('www.amazon'):
+          newUrl = shortenUrl(expandedUrlWithNewParams, token)
+        else:
+          ronokoLink = makeRonokoLink(expandedUrlWithNewParams, ronokoId)
+          newUrl = shortenUrl(ronokoLink, token)
+
+        ent.url = newUrl
+        
   
   message.message = messageText
   
@@ -631,7 +713,7 @@ def linkInExpandedUrlBlackList(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
     expandedUrl = expandUrl(url)
@@ -639,6 +721,15 @@ def linkInExpandedUrlBlackList(message, data):
     for u in blockedUrls:
       if u.lower() in expandedUrl.lower():
         hasBannedUrl = True
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        expandedUrl = expandUrl(ent.url)
+
+        for u in blockedUrls:
+          if u.lower() in expandedUrl.lower():
+            hasBannedUrl = True
   
   if hasBannedUrl:
     return {'message': message, 'hasPassed': False, 'dontSend': True}
@@ -656,7 +747,7 @@ def linkInExpandedUrlWhiteList(message, data):
 
   extractor = URLExtract()
 
-  urls = extractor.find_urls(messageText)
+  urls = extractor.find_urls(deEmojify(messageText))
 
   for url in urls:
     expandedUrl = expandUrl(url)
@@ -664,6 +755,15 @@ def linkInExpandedUrlWhiteList(message, data):
     for u in whiteUrls:
       if u.lower() in expandedUrl.lower():
         hasWhiteUrl = True
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        expandedUrl = expandUrl(ent.url)
+
+        for u in whiteUrls:
+          if u.lower() in expandedUrl.lower():
+            hasWhiteUrl = True
   
   if hasWhiteUrl:
     return {'message': message, 'hasPassed': True, 'dontSend': False}
@@ -673,7 +773,9 @@ def linkInExpandedUrlWhiteList(message, data):
 def banAllMediaRule(message, data):
   hasMedia = False
 
-  if message.media:
+  if type(message.media) == MessageMediaWebPage:
+    hasMedia = False
+  elif message.media:
     hasMedia = True
   else:
     hasMedia = False
@@ -733,4 +835,14 @@ def mediaBlackListRule(message, data):
   else:
     return {'message': message, 'hasPassed': False, 'dontSend': True}
 
- 
+def removeMediaFromMessageRule(message, data):
+  if message.media:
+    allowedMedias = data.split(mediaSeperator)
+  
+    messageMediaType = getMediaType(message.media)
+    
+    if messageMediaType in allowedMedias:
+      message.media = None
+
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
+  
