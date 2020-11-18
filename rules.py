@@ -1,4 +1,3 @@
-from urlextract import URLExtract
 import certifi
 import pycurl
 import sys
@@ -178,6 +177,20 @@ def filterMessage(message, rules):
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 11:
+        # ban message with certain links
+        filterRes = BanMessageWithCertainLinksRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 12:
+        # remove certain links from message
+        filterRes = RemoveCertainLinksRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
     elif ruleCode == 3:
       if ruleOptionCode == 1:
         # Ban all Medias
@@ -203,6 +216,13 @@ def filterMessage(message, rules):
       elif ruleOptionCode == 4:
         # remove media from message
         filterRes = removeMediaFromMessageRule(newMessage, ruleData)
+        newMessage = filterRes['message']
+        hasPassed = filterRes['hasPassed']
+        if filterRes['dontSend']:
+          dontSend = filterRes['dontSend']
+      elif ruleOptionCode == 5:
+        # remove web page preview
+        filterRes = removeWebPagePreviewRule(newMessage, ruleData)
         newMessage = filterRes['message']
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
@@ -258,7 +278,6 @@ def wordReplaceRule(message, data):
       
       messageText = result
 
-  # messageText = ' '.join(messageText.split())
   messageText = message.replace('  ', ' ')
   message.message = messageText
 
@@ -303,14 +322,25 @@ def clearFormattingRule(message, data):
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
+def extractUrls(text):
+  # old version:
+  # must be imported
+  # extractor = URLExtract()
+
+  # urls = extractor.find_urls(deEmojify(U))
+  
+  urls = re.findall(r'\b((?:https?://)?(?:(?:www\.)?(?:[\da-z\.-]+)\.(?:[a-z]{2,6})|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?:(?::[0-9a-fA-F]{1,4}){1,6})|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(?::[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(?:ffff(?::0{1,4}){0,1}:){0,1}(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])|(?:[0-9a-fA-F]{1,4}:){1,4}:(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])))(?::[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])?(?:/[\w\.-]*)*/?)\b', text)
+  
+  return urls
+
 def banIfHasLinkRule(message, data):
   messageText = message.message
 
   hasLink = False
 
-  extractor = URLExtract()
+  urls = extractUrls(messageText)
 
-  if extractor.has_urls(deEmojify(messageText)):
+  if urls:
     hasLink = True
   elif message.entities:
     for ent in message.entities:
@@ -325,9 +355,7 @@ def banIfHasLinkRule(message, data):
 def removeLinksRule(message, data):
   messageText = message.message
   
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     messageText = messageText.replace(url, '')
@@ -405,10 +433,12 @@ def shortenUrl(url, token):
   }
   
   response = None
-  
   response = requests.post('https://api-ssl.bitly.com/v4/shorten', data=json.dumps(payload), headers=headers)
 
-  return response.json()['link']
+  if response.json()['message'] and response.json()['message'] == 'ALREADY_A_BITLY_LINK':
+    return url
+  else:
+    return response.json()['link']
 
 def expandUrl(url):
   newUrl = url
@@ -459,11 +489,9 @@ class Storage:
 def changeLinkParamsRule(message, data):
   messageText = message.message
 
-  extractor = URLExtract()
-
   paramGroups = data.split(paramValueGroupSeperator)
 
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     newUrl = addParamToLink(url, paramGroups)
@@ -489,9 +517,7 @@ def changeShortLinkParamAndShortenRule(message, data):
   token = ruleData[1]
   paramsAndValues = ruleData[0]
 
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     expandedUrl = url
@@ -550,9 +576,7 @@ def clearemojiesRule(message, data):
 def expandLinksRule(message, data):
   messageText = message.message
 
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     expandedUrl = expandUrl(url)
@@ -576,9 +600,7 @@ def shortenLinksRule(message, data):
   messageText = message.message
   token = data
 
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     newUrl = shortenUrl(url, token)
@@ -606,9 +628,7 @@ def changeParamsAndShortenLinkRule(message, data):
   token = ruleData[1]
   paramsAndValues = ruleData[0]
 
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     paramGroups = paramsAndValues.split(paramValueGroupSeperator)
@@ -651,9 +671,7 @@ def ronkovalleyLinkRule(message, data):
   token = ruleData[1]
   ronokoId = ruleData[2]
 
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     expandedUrl = url
@@ -711,9 +729,7 @@ def linkInExpandedUrlBlackList(message, data):
 
   blockedUrls = data.split(urlSeperator)
 
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     expandedUrl = expandUrl(url)
@@ -721,7 +737,7 @@ def linkInExpandedUrlBlackList(message, data):
     for u in blockedUrls:
       if u.lower() in expandedUrl.lower():
         hasBannedUrl = True
-
+        
   if message.entities:
     for ent  in message.entities:
       if type(ent) == MessageEntityTextUrl:
@@ -745,9 +761,7 @@ def linkInExpandedUrlWhiteList(message, data):
 
   whiteUrls = data.split(urlSeperator)
 
-  extractor = URLExtract()
-
-  urls = extractor.find_urls(deEmojify(messageText))
+  urls = extractUrls(messageText)
 
   for url in urls:
     expandedUrl = expandUrl(url)
@@ -769,6 +783,55 @@ def linkInExpandedUrlWhiteList(message, data):
     return {'message': message, 'hasPassed': True, 'dontSend': False}
   else:
     return {'message': message, 'hasPassed': False, 'dontSend': True}
+
+def BanMessageWithCertainLinksRule(message, data):
+  hasLink = False
+
+  messageText = message.message
+
+  blockedUrls = data.split(urlSeperator)
+
+  urls = extractUrls(messageText)
+
+  for url in urls:
+    for u in blockedUrls:
+      if u.lower() in url.lower():
+        hasLink = True
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        if ent.url.lower() in blockedUrls:
+          hasLink = True
+  
+  if hasLink:
+    return {'message': message, 'hasPassed': False, 'dontSend': True}
+  else:
+    return {'message': message, 'hasPassed': True, 'dontSend': False}
+
+def RemoveCertainLinksRule(message, data):
+  messageText = message.message
+
+  blockedUrls = data.split(urlSeperator)
+
+  urls = extractUrls(messageText)
+
+  for url in urls:
+    for u in blockedUrls:
+      if u.lower() in url.lower():
+        messageText = messageText.replace(url, ' ')
+
+  if message.entities:
+    for ent  in message.entities:
+      if type(ent) == MessageEntityTextUrl:
+        for u in blockedUrls:
+          if ent.url.lower() in u.lower() or u.lower() in ent.url.lower():
+            ent.length = 0
+  
+  messageText = messageText.replace('  ', ' ')
+  message.message = messageText
+  
+  return {'message': message, 'hasPassed': False, 'dontSend': True}
 
 def banAllMediaRule(message, data):
   hasMedia = False
@@ -805,14 +868,15 @@ def getMediaType(media):
 
 def mediaWhiteListRule(message, data):
   allowedMedias = data.split(mediaSeperator)
-  hasPassed = True
+  hasPassed = False
   
-  messageMediaType = getMediaType(message.media)
-  
-  if messageMediaType in allowedMedias:
-    hasPassed = True
-  else:
-    hasPassed = False
+  if message.media:
+    messageMediaType = getMediaType(message.media)
+    
+    if messageMediaType in allowedMedias:
+      hasPassed = True
+    else:
+      hasPassed = False
 
   if hasPassed:
     return {'message': message, 'hasPassed': True, 'dontSend': False}
@@ -823,12 +887,13 @@ def mediaBlackListRule(message, data):
   notAllowedMedias = data.split(mediaSeperator)
   hasPassed = True
   
-  messageMediaType = getMediaType(message.media)
+  if message.media:
+    messageMediaType = getMediaType(message.media)
   
-  if messageMediaType in notAllowedMedias:
-    hasPassed = False
-  else:
-    hasPassed = True
+    if messageMediaType in notAllowedMedias:
+      hasPassed = False
+    else:
+      hasPassed = True
 
   if hasPassed:
     return {'message': message, 'hasPassed': True, 'dontSend': False}
@@ -846,3 +911,9 @@ def removeMediaFromMessageRule(message, data):
 
   return {'message': message, 'hasPassed': True, 'dontSend': False}
   
+def removeWebPagePreviewRule(message, data):
+  if message.media:
+    if type(message.media) == MessageMediaWebPage:
+      message.media = None
+  
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
