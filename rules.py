@@ -801,8 +801,9 @@ def BanMessageWithCertainLinksRule(message, data):
   if message.entities:
     for ent  in message.entities:
       if type(ent) == MessageEntityTextUrl:
-        if ent.url.lower() in blockedUrls:
-          hasLink = True
+        for u in blockedUrls:
+          if ent.url.lower() in u.lowoer():
+            hasLink = True
   
   if hasLink:
     return {'message': message, 'hasPassed': False, 'dontSend': True}
@@ -831,7 +832,7 @@ def RemoveCertainLinksRule(message, data):
   messageText = messageText.replace('  ', ' ')
   message.message = messageText
   
-  return {'message': message, 'hasPassed': False, 'dontSend': True}
+  return {'message': message, 'hasPassed': True, 'dontSend': False}
 
 def banAllMediaRule(message, data):
   hasMedia = False
@@ -850,6 +851,7 @@ def banAllMediaRule(message, data):
 
 def getMediaType(media):
   # list of types : image | audio | video | document | unknown
+  
   MT = 'unknown'
   if type(media) == MessageMediaPhoto:
     MT = 'image'
@@ -887,13 +889,16 @@ def mediaBlackListRule(message, data):
   notAllowedMedias = data.split(mediaSeperator)
   hasPassed = True
   
-  if message.media:
-    messageMediaType = getMediaType(message.media)
-  
-    if messageMediaType in notAllowedMedias:
-      hasPassed = False
-    else:
-      hasPassed = True
+  if not type(message.media) == MessageMediaWebPage: 
+    if message.media:
+      messageMediaType = getMediaType(message.media)
+    
+      if messageMediaType in notAllowedMedias:
+        hasPassed = False
+      else:
+        hasPassed = True
+  else:
+    hasPassed = True
 
   if hasPassed:
     return {'message': message, 'hasPassed': True, 'dontSend': False}
@@ -902,12 +907,13 @@ def mediaBlackListRule(message, data):
 
 def removeMediaFromMessageRule(message, data):
   if message.media:
-    allowedMedias = data.split(mediaSeperator)
+    blockedMedias = data.split(mediaSeperator)
   
-    messageMediaType = getMediaType(message.media)
-    
-    if messageMediaType in allowedMedias:
-      message.media = None
+    if not type(message.media) == MessageMediaWebPage:
+      messageMediaType = getMediaType(message.media)
+      
+      if messageMediaType in blockedMedias:
+        message.media = None
 
   return {'message': message, 'hasPassed': True, 'dontSend': False}
   

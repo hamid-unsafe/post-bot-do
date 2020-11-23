@@ -50,7 +50,6 @@ async def bot_new_message_handler(event):
 
 @client.on(events.NewMessage)
 async def new_message_handler(event):
-  print('new message')
   if type(event.to_id) == PeerChannel or type(event.message.to_id) == PeerChannel:
     if event.to_id:
       channel = await client.get_entity(event.to_id.channel_id)
