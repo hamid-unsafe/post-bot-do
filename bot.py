@@ -400,7 +400,7 @@ async def botCommandRecieved(event, command):
   elif command == 'test':
     print('test')
     
-    await event.respond('test response')
+    await event.respond('test response from git pull')
   
   else:
     await event.respond('command is not defined: ' + command)
