@@ -18,7 +18,7 @@ client_name = 'client'
 bot_name = 'bot'
 API_ID = 1817932
 API_HASH = '96c1ee3203876c9b5719e2de75a3b7d4'
-BOT_TOKEN = '1345211056:AAEQIL0JcZxcfELcFK6lU6JZTgWVhsa52wQ'
+BOT_TOKEN = '1424211443:AAEij4MHtPirx7ITm0YXpveqsEQcKi93nOQ'
 
 client = TelegramClient(client_name, API_ID, API_HASH)
 bot = TelegramClient(bot_name, API_ID, API_HASH)
@@ -45,6 +45,10 @@ async def bot_new_message_handler(event):
           await joinChannel(event.raw_text)
       else:
         await event.respond('default response')
+  elif event.raw_text == '/start':
+    db.addUser(event.from_id, 'tester')
+
+    await event.respond('🤖 **LinkmyBot is now ready to automate your content posting!**\nAll you need to do is define your source & destination in a connector and you are good to go.\n**To get started, use the following command to define your first connector:**\n/newconnector\nFor any help use command /help or reach out to @LinkmyBot_Support')
   elif event.raw_text == '/getid':
     await event.respond(f'{event.from_id}')
 
@@ -97,7 +101,7 @@ async def joinChannel(id):
 
 async def botCommandRecieved(event, command):
   if command == 'start':
-    await event.respond('🎉 welcome 🎉')
+    await event.respond('🤖 **LinkmyBot is now ready to automate your content posting!**\nAll you need to do is define your source & destination in a connector and you are good to go.\n**To get started, use the following command to define your first connector:**\n/newconnector\nFor any help use command /help or reach out to @LinkmyBot_Support')
 
   # give the id
   elif command == 'getid':
@@ -114,7 +118,7 @@ async def botCommandRecieved(event, command):
     for con in connectors:
       name = con['name']
       id = con['id']
-      response += f'🔗 {name}\n👁️: /con_{id}\n\n'
+      response += f'🔗 {name}\n👁️: /connector_{id}\n\n'
 
     if len(connectors) == 0:
       response = '🚩 you have no connectors! \nyou can start with /newconnector'
@@ -127,7 +131,7 @@ async def botCommandRecieved(event, command):
   elif command == 'newconnector':
     funcs.setUserCurrentAction(event.from_id, 'getting-new-connector-name')
 
-    await event.respond('give me the name of your connector\nor cancel the job with /cancel')
+    await event.respond('🔗 Name your connector or cancel this operation using /cancel\nExample: Latest News')
     
   # help command
   elif command == 'help':
@@ -166,7 +170,7 @@ async def botCommandRecieved(event, command):
         await event.respond('there was a problem, please contact support')
 
   # edit connector
-  elif command.startswith('con'):
+  elif command.startswith('connector'):
     conId = command.split('_')[1]
 
     con = funcs.getConnector(conId)
@@ -195,11 +199,20 @@ async def botCommandRecieved(event, command):
           
         response += 'add new dest: /adddest\n\n'
 
+        response += '🚨 Rules:\n'
+        for r in con['rules']:
+          response += f'{r}\n'
+
+        if len(con['rules']) == 0:
+          response += 'this connector has no rules\n'
+          
+        response += 'add rules: /rules\n\n'
+
         conId = con['id']
 
-        response += f'🖊️ edit connector: /econ_{conId}\n\n'
+        response += f'🖊️ edit connector: /editconnector_{conId}\n\n'
 
-        response += '❌ delete connector: /delcon\n\n'
+        response += '❌ delete connector: /delconnector\n\n'
 
         response += 'all connectors: /myconnectors'
 
@@ -211,7 +224,7 @@ async def botCommandRecieved(event, command):
       await event.respond('connector id invalid')
 
   # delete a connector
-  elif command == 'delcon':
+  elif command == 'delconnector':
     activeConnector = funcs.hasActiveConnector(event.from_id)
     
     if activeConnector:
@@ -244,7 +257,7 @@ async def botCommandRecieved(event, command):
     if isEditingCon:
       funcs.setUserCurrentAction(event.from_id, 'adding-destination-to-connector')
 
-      await event.respond('give me the id of the destination')
+      await event.respond('Enter the **username** of destination (user/channel/group/bot):\nExample: **my_destination (without “@”)**')
     else:
       await event.respond('please select a connector first\nsee your connectors at /myconnectors')
 
@@ -262,7 +275,7 @@ async def botCommandRecieved(event, command):
       try:
         funcs.removeDest(conId, dest)
 
-        await event.respond(f'✔️ "{dest}" was removed\ngo back: /econ_{conId}')
+        await event.respond(f'✔️ "{dest}" was removed\ngo back: /editconnector_{conId}')
 
       except:
         await event.respond('there was a problem please contact support')
@@ -289,7 +302,7 @@ async def botCommandRecieved(event, command):
         if len(listOfConnectorsWithSource) == 0:
           await leaveChannel(source)
 
-        await event.respond(f'✔️ "{source}" was removed\ngo back: /econ_{conId}')
+        await event.respond(f'✔️ "{source}" was removed\ngo back: /editconnector_{conId}')
 
       except:
         await event.respond('there was a problem please contact support')
@@ -304,12 +317,12 @@ async def botCommandRecieved(event, command):
     if isEditingCon:
       funcs.setUserCurrentAction(event.from_id, 'adding-source-to-connector')
 
-      await event.respond('give me the id of the source')
+      await event.respond('Enter the **username** of source (channel/group/bot):\nExample: **my_source (without “@”)**')
     else:
       await event.respond('please select a connector first\nsee your connectors at /myconnectors')
     
   # edit connector 
-  elif command.startswith('econ'):
+  elif command.startswith('editconnector'):
     conId = command.split('_')[1]
 
     con = funcs.getConnector(conId)
@@ -333,7 +346,7 @@ async def botCommandRecieved(event, command):
           response += dest + '\n'
           response += f'delete: /deld_{dest}_{conId}\n\n'
 
-        response += f'\ngo back: /con_{conId}'
+        response += f'\ngo back: /connector_{conId}'
 
         await event.respond(response)
       else:
@@ -341,6 +354,12 @@ async def botCommandRecieved(event, command):
         await event.respond('connector id invalid')
     else:
       await event.respond('connector id invalid')
+    
+  # rules
+  elif command.startswith('rules'):
+    funcs.setUserCurrentAction(event.from_id, 'sending-rules')
+
+    await event.respond('Please answer the following questions to setup custom filters:\nQ1: Any keyword you want to add, omit or replace ? Yes or No\nQ2: Any links you want to convert, remove or shorten ? Yes or No\nQ3: Any media you want to block, skip or whitelist ? Yes or No\nQ4: Any other filter required ? Yes or No')
     
   # add channel command
   elif command.startswith('addchannel'):
@@ -400,7 +419,7 @@ async def botCommandRecieved(event, command):
   elif command == 'test':
     print('test')
     
-    await event.respond('test response from git pull')
+    await event.respond('test response live v')
   
   else:
     await event.respond('command is not defined: ' + command)

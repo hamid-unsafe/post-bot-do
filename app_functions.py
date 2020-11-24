@@ -193,7 +193,7 @@ async def respondAction(action, event, bot):
 
         if success == 'success':
           # dest was added in database
-          await respond(f'✔️ destination "{text}" added\nadd another dest: /adddest\nsee connector: /con_{conId[0][0]}')
+          await respond(f'✔️ **"{text}"** added **successfully**\nAdd another destination: /adddest\n👁 View connector: /connector_{conId[0][0]}\n⚡ Setup advanced filters: /rules')
           
           await respond(f'please make sure bot is admin in "{text}"')
 
@@ -237,8 +237,7 @@ async def respondAction(action, event, bot):
 
         if success == 'success':
           # dest was added in database
-
-          await respond(f'✔️ source "{text}" added\nadd another source: /addsource\nsee connector: /con_{conId[0][0]}')
+          await respond(f'✔️ **"{text}"** added **successfully**\nAdd another source: /addsource\n👁 View connector: /connector_{conId[0][0]}')
 
           resetUser(id, 'justaction')
           
@@ -258,13 +257,18 @@ async def respondAction(action, event, bot):
 
         addConnector(id, text)
         
-        await respond('✔️ connector created\nyou can see the connector at /myconnectors')
+        await respond(f'Great! Your Connector "{text}"" created successfully.\nAdd 🔻**Source**, 🔺**Destination** & 🚨**Rules**\nStart here: /myconnectors')
 
         setUserCurrentAction(id, 'none')
       else:
         await respond('❗ connector name must be less than 32 characters')
     except:
       await respond('failed to add connector please try again or contact supprot')
+  elif action == 'sending-rules':
+    await bot.forward_messages('lmbchannel', event.message)
+
+    await respond('Your request has been successfully received & our team will contact you in the next few mins, please keep your filter content ready so that we can readily complete your setup.\n🔗 View your current setup: /myconnectors\nIn case of any issue or query contact our support team @LinkmyBot_Support')
+    setUserCurrentAction(id, 'none')
 
 def getConnectors(userId):
   cons = db.exec_fetch('SELECT id, name FROM connectors WHERE owner_id = %s', (userId,))
