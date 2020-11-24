@@ -112,7 +112,7 @@ def getActiveConnectorSources(userId):
   return res1[0]
 
 def addConnector(userId, name):
-  db.exec('INSERT INTO connectors (owner_id, name, sources, destinations, rules) VALUES (%s, %s, %s, %s, %s)', (userId, name, [], [], [],))
+  db.exec('INSERT INTO connectors (owner_id, name, sources, destinations, rules) VALUES (%s, %s, %s, %s, %s)', (userId, name, [], [], ['3<_>5<_>n'],))
 
 def deleteConnector(conId):
   try:
