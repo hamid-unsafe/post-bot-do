@@ -722,6 +722,17 @@ def ronkovalleyLinkRule(message, data):
   
   return {'message': message, 'hasPassed': True, 'dontSend': False}
 
+def matchUrl(url, hostToMatch):
+  match = False
+  
+  parsed_uri = urlparse(url)
+  host = parsed_uri.netloc
+
+  if host == hostToMatch:
+    match = True
+
+  return match
+
 def linkInExpandedUrlBlackList(message, data):
   global shortLinkUrls
   
@@ -737,7 +748,8 @@ def linkInExpandedUrlBlackList(message, data):
     expandedUrl = expandUrl(url)
 
     for u in blockedUrls:
-      if u.lower() in expandedUrl.lower():
+      matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
+      if matchingBlockedUrl:
         hasBannedUrl = True
         
   if message.entities:
@@ -746,7 +758,8 @@ def linkInExpandedUrlBlackList(message, data):
         expandedUrl = expandUrl(ent.url)
 
         for u in blockedUrls:
-          if u.lower() in expandedUrl.lower():
+          matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
+          if matchingBlockedUrl:
             hasBannedUrl = True
   
   if hasBannedUrl:
@@ -769,7 +782,8 @@ def linkInExpandedUrlWhiteList(message, data):
     expandedUrl = expandUrl(url)
 
     for u in whiteUrls:
-      if u.lower() in expandedUrl.lower():
+      matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
+      if matchingBlockedUrl:
         hasWhiteUrl = True
 
   if message.entities:
@@ -801,7 +815,8 @@ def BanMessageWithCertainLinksRule(message, data):
       if shortener in url.lower():
         expandedUrl = expandUrl(url)
     for u in blockedUrls:
-      if u.lower() in expandedUrl.lower():
+      matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
+      if matchingBlockedUrl:
         hasLink = True
 
   if message.entities:
@@ -812,7 +827,8 @@ def BanMessageWithCertainLinksRule(message, data):
           if shortener in ent.url.lower():
             expandedUrl = expandUrl(url)
         for u in blockedUrls:
-          if u.lowoer() in expandedUrl.lower():
+          matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
+          if matchingBlockedUrl:
             hasLink = True
   
   if hasLink:
@@ -826,7 +842,6 @@ def RemoveCertainLinksRule(message, data):
   blockedUrls = data.split(urlSeperator)
 
   urls = extractUrls(messageText)
-  print(urls)
 
   for url in urls:
     expandedUrl = url
@@ -834,7 +849,8 @@ def RemoveCertainLinksRule(message, data):
       if shortener in url.lower():
         expandedUrl = expandUrl(url)
     for u in blockedUrls:
-      if u.lower() in expandedUrl.lower():
+      matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
+      if matchingBlockedUrl:
         messageText = messageText.replace(url, ' ')
 
   if message.entities:
@@ -845,7 +861,8 @@ def RemoveCertainLinksRule(message, data):
           if shortener in ent.url.lower():
             expandedUrl = expandUrl(ent.url)
         for u in blockedUrls:
-          if expandedUrl.lower() in u.lower() or u.lower() in expandedUrl.lower():
+          matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
+          if matchingBlockedUrl:
             ent.length = 0
   
   messageText = messageText.replace('  ', ' ')

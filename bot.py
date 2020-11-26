@@ -39,7 +39,11 @@ async def bot_new_message_handler(event):
       action = funcs.getUserCurrentAction(event.from_id)
 
       if action != 'none':
-        actionResult = await funcs.respondAction(action, event, bot)
+        if action == 'sending-rules':
+          # action needs access to client
+          actionResult = await funcs.respondAction(action, event, bot)
+        else:
+          actionResult = await funcs.respondAction(action, event, bot)
 
         if actionResult == 'sourceadded':
           await joinChannel(event.raw_text)
@@ -54,6 +58,7 @@ async def bot_new_message_handler(event):
 
 @client.on(events.NewMessage)
 async def new_message_handler(event):
+  print('new message')
   if type(event.to_id) == PeerChannel or type(event.message.to_id) == PeerChannel:
     if event.to_id:
       channel = await client.get_entity(event.to_id.channel_id)
@@ -196,7 +201,7 @@ async def botCommandRecieved(event, command):
 
         if len(con['destinations']) == 0:
           response += 'this connector has no destination\n'
-          
+
         response += 'add new dest: /adddest\n\n'
 
         response += '🚨 Rules:\n'
@@ -417,9 +422,7 @@ async def botCommandRecieved(event, command):
 
   # test command
   elif command == 'test':
-    print('test')
-    
-    await event.respond('test response live v')
+    await event.respond('test response live v after host match')
   
   else:
     await event.respond('command is not defined: ' + command)
