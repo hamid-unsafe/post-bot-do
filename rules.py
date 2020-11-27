@@ -725,8 +725,14 @@ def ronkovalleyLinkRule(message, data):
 def matchUrl(url, hostToMatch):
   match = False
   
+  if not url.startswith('http'):
+    url = 'http://' + url
+    
   parsed_uri = urlparse(url)
   host = parsed_uri.netloc
+
+  if host.startswith('www.'):
+    host = host[4:]
 
   if host == hostToMatch:
     match = True
@@ -851,7 +857,7 @@ def RemoveCertainLinksRule(message, data):
     for u in blockedUrls:
       matchingBlockedUrl = matchUrl(expandedUrl.lower(), u.lower())
       if matchingBlockedUrl:
-        messageText = messageText.replace(url, ' ')
+        messageText = messageText.replace(url, ' ', 1)
 
   if message.entities:
     for ent  in message.entities:
