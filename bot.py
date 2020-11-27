@@ -18,7 +18,7 @@ client_name = 'dude-cv'
 bot_name = 'dude-bv'
 API_ID = 1945628
 API_HASH = '2c96a07930fe107684ab108250886d49'
-BOT_TOKEN = '1171756035:AAEgEenIMkPu8z3nqw0myVQiizm4gYDrNBw'
+BOT_TOKEN = '1424211443:AAEij4MHtPirx7ITm0YXpveqsEQcKi93nOQ'
 
 client = TelegramClient(client_name, API_ID, API_HASH)
 bot = TelegramClient(bot_name, API_ID, API_HASH)
