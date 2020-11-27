@@ -14,11 +14,11 @@ from rules import filterMessage
 
 db.connectDB()
 
-client_name = 'client'
-bot_name = 'bot'
-API_ID = 1817932
-API_HASH = '96c1ee3203876c9b5719e2de75a3b7d4'
-BOT_TOKEN = '1424211443:AAEij4MHtPirx7ITm0YXpveqsEQcKi93nOQ'
+client_name = 'dude-cv'
+bot_name = 'dude-bv'
+API_ID = 1945628
+API_HASH = '2c96a07930fe107684ab108250886d49'
+BOT_TOKEN = '1171756035:AAEgEenIMkPu8z3nqw0myVQiizm4gYDrNBw'
 
 client = TelegramClient(client_name, API_ID, API_HASH)
 bot = TelegramClient(bot_name, API_ID, API_HASH)
@@ -28,33 +28,33 @@ bot.start(bot_token=BOT_TOKEN)
 
 @bot.on(events.NewMessage)
 async def bot_new_message_handler(event):
-  isUser = funcs.checkAuthUser(event.from_id)
-  
-  if isUser or event.from_id == 79713563:
-    if(event.raw_text.startswith('/')):
-      command = event.raw_text.split('/')[1]
-      
-      await botCommandRecieved(event, command)
-    else:
-      action = funcs.getUserCurrentAction(event.from_id)
-
-      if action != 'none':
-        if action == 'sending-rules':
-          # action needs access to client
-          actionResult = await funcs.respondAction(action, event, bot)
-        else:
-          actionResult = await funcs.respondAction(action, event, bot)
-
-        if actionResult == 'sourceadded':
-          await joinChannel(event.raw_text)
+  try:
+    isUser = funcs.checkAuthUser(event.from_id)
+    print('bot recived message')
+    
+    if isUser or event.from_id == 79713563:
+      if(event.raw_text.startswith('/')):
+        command = event.raw_text.split('/')[1]
+        
+        await botCommandRecieved(event, command)
       else:
-        await event.respond('default response')
-  elif event.raw_text == '/start':
-    db.addUser(event.from_id, 'tester')
+        action = funcs.getUserCurrentAction(event.from_id)
 
-    await event.respond('🤖 **LinkmyBot is now ready to automate your content posting!**\nAll you need to do is define your source & destination in a connector and you are good to go.\n**To get started, use the following command to define your first connector:**\n/newconnector\nFor any help use command /help or reach out to @LinkmyBot_Support')
-  elif event.raw_text == '/getid':
-    await event.respond(f'{event.from_id}')
+        if action != 'none':
+          actionResult = await funcs.respondAction(action, event, bot)
+
+          if actionResult == 'sourceadded':
+            await joinChannel(event.raw_text)
+        else:
+          await event.respond('default response')
+    elif event.raw_text == '/start':
+      db.addUser(event.from_id, 'tester')
+
+      await event.respond('hello')
+    elif event.raw_text == '/getid':
+      await event.respond(f'{event.from_id}')
+  except Exception as e:
+    print(e)
 
 @client.on(events.NewMessage)
 async def new_message_handler(event):
@@ -422,7 +422,9 @@ async def botCommandRecieved(event, command):
 
   # test command
   elif command == 'test':
-    await event.respond('test response live v after host match')
+    print('test')
+    
+    await event.respond('test response')
   
   else:
     await event.respond('command is not defined: ' + command)

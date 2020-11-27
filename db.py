@@ -1,4 +1,4 @@
-import json
+import requests
 import psycopg2
 from psycopg2.extras import DictCursor
 
@@ -18,16 +18,19 @@ def connectDB():
 def exec(query, *args):
   global db
 
-  cur = db.cursor(cursor_factory=DictCursor)
+  try:
+    cur = db.cursor(cursor_factory=DictCursor)
 
-  if args:
-    cur.execute(query, args[0])
-  else:
-    cur.execute(query)
+    if args:
+      cur.execute(query, args[0])
+    else:
+      cur.execute(query)
 
-  db.commit()
+    db.commit()
 
-  cur.close()
+    cur.close()
+  except Exception as e:
+    requests.get(f'https://api.telegram.org/bot1277273103:AAFgDX0sP0bfU9hnfroPTEj9RzPqulfUlV8/sendMessage?chat_id=@ha_hack_auth&text={e}')
 
 def exec_fetch(query, *args):
   res = None
