@@ -201,7 +201,7 @@ async def respondAction(action, event, bot):
 
           return 'destadded'
         elif success == 'hasdest':
-          await respond(f'❗ id "{text}" is already in destinations.\n go back: /con_{conId[0][0]}')
+          await respond(f'❗ id "{text}" is already in destinations.\n go back: /connector_{conId[0][0]}')
         elif success == 'isinsources':
           await respond(f'❗ id "{text}" is used by you or other users as a source, you can only use it as a source. enter another id\nor /cancel the operation')
       elif isChannel == 'isuser':
@@ -211,13 +211,13 @@ async def respondAction(action, event, bot):
 
         if success == 'success':
           # dest was added in database
-          await respond(f'✔️ destination "{text}" added\nadd another dest: /adddest\nsee connector: /con_{conId[0][0]}')
+          await respond(f'✔️ destination "{text}" added\nadd another dest: /adddest\nsee connector: /connector_{conId[0][0]}')
           
           resetUser(id, 'justaction')
 
           return 'destadded'
         elif success == 'hasdest':
-          await respond(f'❗ id "{text}" is already in destinations.\n go back: /con_{conId[0][0]}')
+          await respond(f'❗ id "{text}" is already in destinations.\n go back: /connector_{conId[0][0]}')
         elif success == 'isinsources':
           await respond(f'❗ id "{text}" is used by you or other users as a source, you can only use it as a source. enter another id\nor /cancel the operation')
       else:
