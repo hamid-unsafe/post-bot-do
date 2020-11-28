@@ -728,7 +728,7 @@ def matchUrl(url, hostToMatch):
   if not url.startswith('http'):
     url = 'http://' + url
     
-  parsed_uri = urlparse(url)
+  parsed_uri = urlparse.urlparse(url)
   host = parsed_uri.netloc
 
   if host.startswith('www.'):
