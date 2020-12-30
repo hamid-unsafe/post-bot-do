@@ -243,7 +243,7 @@ async def respondAction(action, event, bot):
           
           return 'sourceadded'
         elif success == 'hassource':
-          await respond(f'❗ id "{text}" is already in sources\n\ngo back: /con_{conId[0][0]}')
+          await respond(f'❗ id "{text}" is already in sources\n\ngo back: /connector_{conId[0][0]}')
         elif success == 'isindests':
           await respond(f'❗ id "{text}" is used by you or other users as a destination, you can only use it as a destination. enter another id\nor /cancel the operation')
         

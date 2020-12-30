@@ -121,76 +121,76 @@ def filterMessage(message, rules):
         hasPassed = filterRes['hasPassed']
         if filterRes['dontSend']:
           dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 3:
-        # change params
-        filterRes = changeLinkParamsRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 4:
-        # change short link params
-        filterRes = changeShortLinkParamAndShortenRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 5:
-        # expand links
-        filterRes = expandLinksRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 6:
-        # shorten link
-        filterRes = shortenLinksRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 7:
-        # change params then shorten
-        filterRes = changeParamsAndShortenLinkRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 8:
-        # ronkovalley
-        filterRes = ronkovalleyLinkRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 9:
-        # ban url in expanedd link
-        filterRes = linkInExpandedUrlBlackList(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 10:
-        # link in expanded url white list
-        filterRes = linkInExpandedUrlWhiteList(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 11:
-        # ban message with certain links
-        filterRes = BanMessageWithCertainLinksRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
-      elif ruleOptionCode == 12:
-        # remove certain links from message
-        filterRes = RemoveCertainLinksRule(newMessage, ruleData)
-        newMessage = filterRes['message']
-        hasPassed = filterRes['hasPassed']
-        if filterRes['dontSend']:
-          dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 3:
+      #   # change params
+      #   filterRes = changeLinkParamsRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 4:
+      #   # change short link params
+      #   filterRes = changeShortLinkParamAndShortenRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 5:
+      #   # expand links
+      #   filterRes = expandLinksRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 6:
+      #   # shorten link
+      #   filterRes = shortenLinksRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 7:
+      #   # change params then shorten
+      #   filterRes = changeParamsAndShortenLinkRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 8:
+      #   # ronkovalley
+      #   filterRes = ronkovalleyLinkRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 9:
+      #   # ban url in expanedd link
+      #   filterRes = linkInExpandedUrlBlackList(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 10:
+      #   # link in expanded url white list
+      #   filterRes = linkInExpandedUrlWhiteList(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 11:
+      #   # ban message with certain links
+      #   filterRes = BanMessageWithCertainLinksRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
+      # elif ruleOptionCode == 12:
+      #   # remove certain links from message
+      #   filterRes = RemoveCertainLinksRule(newMessage, ruleData)
+      #   newMessage = filterRes['message']
+      #   hasPassed = filterRes['hasPassed']
+      #   if filterRes['dontSend']:
+      #     dontSend = filterRes['dontSend']
     elif ruleCode == 3:
       if ruleOptionCode == 1:
         # Ban all Medias
