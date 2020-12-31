@@ -278,7 +278,7 @@ def wordReplaceRule(message, data):
       
       messageText = result
 
-  messageText = message.replace('  ', ' ')
+  messageText = messageText.replace('  ', ' ')
   message.message = messageText
 
   return {'message': message, 'hasPassed': True, 'dontSend': False}
