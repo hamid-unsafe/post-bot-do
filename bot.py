@@ -69,6 +69,11 @@ async def new_message_handler(event):
     # message = event.message
     message = await bot.get_messages(channelUsername, ids=event.message.id)
 
+    if not message:
+      message = event.message
+      if message.media:
+        message.media = None
+
     destAndRules = funcs.getDestAndRuleWithSource(channelUsername)
     
     for i in destAndRules:
