@@ -28,12 +28,12 @@ async def getUser(id, bot):
     return False
 
 def getConnectorsHavingSource(sourceId):
-  li = db.exec_fetch('SELECT * FROM connectors WHERE %s = ANY (sources)', (sourceId,))
+  li = db.exec_fetch('SELECT * FROM connectors WHERE %s = ANY (sources)', (sourceId.lower(),))
 
   return li
 
 def getDestAndRuleWithSource(sourceId):
-  destAndRules = db.exec_fetch('SELECT destinations, rules FROM connectors WHERE %s = ANY (sources)', (sourceId,))
+  destAndRules = db.exec_fetch('SELECT destinations, rules FROM connectors WHERE %s = ANY (sources)', (sourceId.lower(),))
 
   return destAndRules
 

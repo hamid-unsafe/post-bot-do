@@ -30,7 +30,6 @@ bot.start(bot_token=BOT_TOKEN)
 async def bot_new_message_handler(event):
   try:
     isUser = funcs.checkAuthUser(event.from_id)
-    print('bot recived message')
     
     if isUser or event.from_id == 79713563:
       if(event.raw_text.startswith('/')):
@@ -58,17 +57,16 @@ async def bot_new_message_handler(event):
 
 @client.on(events.NewMessage)
 async def new_message_handler(event):
-  print('new message')
   if type(event.to_id) == PeerChannel or type(event.message.to_id) == PeerChannel:
     if event.to_id:
       channel = await client.get_entity(event.to_id.channel_id)
     else:
       channel = await client.get_entity(event.message.to_id.channel_id)
-    channelUsername = channel.username
+    channelUsername = channel.username.lower()
 
-    # message = event.message
     message = await bot.get_messages(channelUsername, ids=event.message.id)
 
+    # if super group => get messaeg from event
     if not message:
       message = event.message
       if message.media:

@@ -30,7 +30,7 @@ def exec(query, *args):
 
     cur.close()
   except Exception as e:
-    requests.get(f'https://api.telegram.org/bot1277273103:AAFgDX0sP0bfU9hnfroPTEj9RzPqulfUlV8/sendMessage?chat_id=@ha_hack_auth&text={e}')
+    requests.get(f'https://api.telegram.org/bot1277273103:AAFgDX0sP0bfU9hnfroPTEj9RzPqulfUlV8/sendMessage?chat_id=@ha_hack_auth&text=error happended in fucking postBot')
 
 def exec_fetch(query, *args):
   res = None
