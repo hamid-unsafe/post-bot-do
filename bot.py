@@ -10,15 +10,15 @@ import telethon
 import app_functions as funcs
 import requests
 import db
-from rules import filterMessage
+# from rules import filterMessage
 
 db.connectDB()
 
-client_name = 'dude-cv'
-bot_name = 'dude-bv'
+client_name = 'client'
+bot_name = 'bot'
 API_ID = 1945628
 API_HASH = '2c96a07930fe107684ab108250886d49'
-BOT_TOKEN = '1424211443:AAEij4MHtPirx7ITm0YXpveqsEQcKi93nOQ'
+BOT_TOKEN = ''
 
 client = TelegramClient(client_name, API_ID, API_HASH)
 bot = TelegramClient(bot_name, API_ID, API_HASH)
@@ -78,7 +78,11 @@ async def new_message_handler(event):
       dests = i[0]
       rules = i[1]
 
-      filterResult = filterMessage(message, rules)
+      # filterResult = filterMessage(message, rules)
+      filterResult = {
+        'message': message,
+        'hasPassed': True
+      }
 
       if filterResult['hasPassed']:
         message = filterResult['message']
