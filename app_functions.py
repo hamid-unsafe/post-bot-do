@@ -1,5 +1,6 @@
 from telethon.tl.types import Channel, User
 import db
+from responses import responses
 
 async def validateChannelId(id, bot):
   try:
@@ -12,7 +13,8 @@ async def validateChannelId(id, bot):
     else:
       return False
 
-  except:
+  except Exception as e:
+    print(e)
     return False
 
 async def getUser(id, bot):
@@ -178,8 +180,9 @@ def checkUserInDb(id):
 
 async def respondAction(action, event, bot):
   respond = event.respond
-  id = event.from_id
+  id = event.original_update.message.peer_id.user_id
   text = event.raw_text
+
   
   if action == 'adding-destination-to-connector':
     try:
@@ -193,7 +196,7 @@ async def respondAction(action, event, bot):
 
         if success == 'success':
           # dest was added in database
-          await respond(f'✔️ **"{text}"** added **successfully**\nAdd another destination: /adddest\n👁 View connector: /connector_{conId[0][0]}\n⚡ Setup advanced filters: /rules')
+          await respond(responses['get']('dest_added', text, conId[0][0]))
           
           await respond(f'please make sure bot is admin in "{text}"')
 
@@ -211,13 +214,13 @@ async def respondAction(action, event, bot):
 
         if success == 'success':
           # dest was added in database
-          await respond(f'✔️ destination "{text}" added\nadd another dest: /adddest\nsee connector: /connector_{conId[0][0]}')
+          await respond(responses['get']('dest_added', text, conId[0][0]))
           
           resetUser(id, 'justaction')
 
           return 'destadded'
         elif success == 'hasdest':
-          await respond(f'❗ id "{text}" is already in destinations.\n go back: /connector_{conId[0][0]}')
+          await respond(responses['get']('already_in_dests', text, conId[0][0]))
         elif success == 'isinsources':
           await respond(f'❗ id "{text}" is used by you or other users as a source, you can only use it as a source. enter another id\nor /cancel the operation')
       else:
@@ -237,13 +240,13 @@ async def respondAction(action, event, bot):
 
         if success == 'success':
           # dest was added in database
-          await respond(f'✔️ **"{text}"** added **successfully**\nAdd another source: /addsource\n👁 View connector: /connector_{conId[0][0]}')
+          await respond(responses['get']('source_added', text, conId[0][0]))
 
           resetUser(id, 'justaction')
           
           return 'sourceadded'
         elif success == 'hassource':
-          await respond(f'❗ id "{text}" is already in sources\n\ngo back: /connector_{conId[0][0]}')
+          await respond(responses['get']('already_in_sources', text, conId[0][0]))
         elif success == 'isindests':
           await respond(f'❗ id "{text}" is used by you or other users as a destination, you can only use it as a destination. enter another id\nor /cancel the operation')
         
@@ -254,21 +257,21 @@ async def respondAction(action, event, bot):
   elif action == 'getting-new-connector-name':
     try:
       if len(text) < 32:
-
         addConnector(id, text)
         
-        await respond(f'Great! Your Connector "{text}"" created successfully.\nAdd 🔻**Source**, 🔺**Destination** & 🚨**Rules**\nStart here: /myconnectors')
+        await respond(responses['get']('connector_created', text))
 
         setUserCurrentAction(id, 'none')
       else:
         await respond('❗ connector name must be less than 32 characters')
     except:
       await respond('failed to add connector please try again or contact supprot')
-  elif action == 'sending-rules':
-    await bot.forward_messages('lmbchannel', event.message)
+  # elif action == 'sending-rules':
+  #   await bot.forward_messages('lmbchannel', event.message)
 
-    await respond('Your request has been successfully received & our team will contact you in the next few mins, please keep your filter content ready so that we can readily complete your setup.\n🔗 View your current setup: /myconnectors\nIn case of any issue or query contact our support team @LinkmyBot_Support')
-    setUserCurrentAction(id, 'none')
+  #   await respond('Your request has been successfully received & our team will contact you in the next few mins, please keep your filter content ready so that we can readily complete your setup.\n🔗 View your current setup: /myconnectors\nIn case of any issue or query contact our support team @LinkmyBot_Support')
+
+  #   setUserCurrentAction(id, 'none')
 
 def getConnectors(userId):
   cons = db.exec_fetch('SELECT id, name FROM connectors WHERE owner_id = %s', (userId,))

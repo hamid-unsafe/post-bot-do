@@ -1,19 +1,17 @@
-import requests
 import psycopg2
 from psycopg2.extras import DictCursor
 
-DB_HOST='post-bot-db-do-user-8158092-0.b.db.ondigitalocean.com'
+DB_HOST='localhost'
 DB_NAME='post-bot'
-DB_USER='admin'
-DB_PASS='ofj65mnfmd73aguo'
-DB_PORT=25060
+DB_USER='postgres'
+DB_PASS='82923232'
 
 db = None
 
 def connectDB():
   global db
   
-  db = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+  db = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
 
 def exec(query, *args):
   global db
@@ -30,7 +28,7 @@ def exec(query, *args):
 
     cur.close()
   except Exception as e:
-    requests.get(f'https://api.telegram.org/bot1277273103:AAFgDX0sP0bfU9hnfroPTEj9RzPqulfUlV8/sendMessage?chat_id=@ha_hack_auth&text=error happended in fucking postBot')
+    print(e)
 
 def exec_fetch(query, *args):
   res = None
